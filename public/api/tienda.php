@@ -1,10 +1,9 @@
 <?php
 session_start();
-ob_start(); // captura cualquier warning/notice antes del JSON
+ob_start();
 
 header('Content-Type: application/json; charset=utf-8');
 
-// Auth guard
 if (empty($_SESSION['uid']) || empty($_SESSION['slug'])) {
     http_response_code(401);
     echo json_encode(['error' => 'No autorizado']);
@@ -17,13 +16,12 @@ require_once '/var/www/komercia/config/wasabi.php';
 $slug   = $_SESSION['slug'];
 $accion = $_GET['accion'] ?? '';
 
-// ─── GET: obtener datos de la tienda ─────────────────────────────────────────
+// ─── GET: obtener datos de la tienda ────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && $accion === 'obtener') {
 
     $response = firestoreRequest('GET', "tiendas/{$slug}");
 
     if (!$response || isset($response['error'])) {
-        // Document may not exist yet — return empty object
         echo json_encode([
             'nombre'          => '',
             'descripcion'     => '',
@@ -32,6 +30,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $accion === 'obtener') {
             'direccion'       => '',
             'email'           => '',
             'color_primario'  => '#ff6a00',
+            'metodo_ventas'   => 'whatsapp',
+            'delivery_tipo'   => 'no_incluido',
+            'delivery_precio' => '0',
+            'whatsapp'        => '',
         ]);
         exit;
     }
@@ -41,33 +43,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $accion === 'obtener') {
     function firestoreValue(array $fields, string $key): string {
         if (!isset($fields[$key])) return '';
         $field = $fields[$key];
-        return $field['stringValue']
+        return (string)($field['stringValue']
             ?? $field['integerValue']
             ?? $field['doubleValue']
-            ?? '';
+            ?? '');
     }
 
     echo json_encode([
-        'nombre'         => firestoreValue($fields, 'nombre'),
-        'descripcion'    => firestoreValue($fields, 'descripcion'),
-        'logo'           => firestoreValue($fields, 'logo'),
-        'telefono'       => firestoreValue($fields, 'telefono'),
-        'direccion'      => firestoreValue($fields, 'direccion'),
-        'email'          => firestoreValue($fields, 'email'),
-        'color_primario' => firestoreValue($fields, 'color_primario') ?: '#ff6a00',
+        'nombre'          => firestoreValue($fields, 'nombre'),
+        'descripcion'     => firestoreValue($fields, 'descripcion'),
+        'logo'            => firestoreValue($fields, 'logo'),
+        'telefono'        => firestoreValue($fields, 'telefono'),
+        'direccion'       => firestoreValue($fields, 'direccion'),
+        'email'           => firestoreValue($fields, 'email'),
+        'color_primario'  => firestoreValue($fields, 'color_primario') ?: '#ff6a00',
+        'metodo_ventas'   => firestoreValue($fields, 'metodo_ventas') ?: 'whatsapp',
+        'delivery_tipo'   => firestoreValue($fields, 'delivery_tipo') ?: 'no_incluido',
+        'delivery_precio' => firestoreValue($fields, 'delivery_precio') ?: '0',
+        'whatsapp'        => firestoreValue($fields, 'whatsapp'),
     ]);
     exit;
 }
 
-// ─── POST: guardar datos de la tienda ────────────────────────────────────────
+// ─── POST: guardar datos de la tienda ───────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $accion === 'guardar') {
 
-    $nombre         = trim($_POST['nombre']         ?? '');
-    $descripcion    = trim($_POST['descripcion']    ?? '');
-    $email          = trim($_POST['email']          ?? '');
-    $telefono       = trim($_POST['telefono']       ?? '');
-    $direccion      = trim($_POST['direccion']      ?? '');
-    $color_primario = trim($_POST['color_primario'] ?? '#ff6a00');
+    $nombre          = trim($_POST['nombre']          ?? '');
+    $descripcion     = trim($_POST['descripcion']     ?? '');
+    $email           = trim($_POST['email']           ?? '');
+    $telefono        = trim($_POST['telefono']        ?? '');
+    $direccion       = trim($_POST['direccion']       ?? '');
+    $color_primario  = trim($_POST['color_primario']  ?? '#ff6a00');
+    $metodo_ventas   = trim($_POST['metodo_ventas']   ?? 'whatsapp');
+    $delivery_tipo   = trim($_POST['delivery_tipo']   ?? 'no_incluido');
+    $delivery_precio = trim($_POST['delivery_precio'] ?? '0');
+    $whatsapp        = trim($_POST['whatsapp']        ?? '');
 
     if ($nombre === '') {
         http_response_code(422);
@@ -75,13 +85,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $accion === 'guardar') {
         exit;
     }
 
-    // Validate hex color
     if (!preg_match('/^#[0-9a-fA-F]{6}$/', $color_primario)) {
         $color_primario = '#ff6a00';
     }
 
-    // Build Firestore fields map
-    // uid se incluye siempre para que nunca se pierda (aunque updateMask ya lo protege)
+    if (!in_array($metodo_ventas, ['whatsapp', 'formulario'])) $metodo_ventas = 'whatsapp';
+    if (!in_array($delivery_tipo, ['gratis', 'no_incluido', 'costo_fijo'])) $delivery_tipo = 'no_incluido';
+
     $uid_session = $_SESSION['uid'];
     $fields = [
         'uid'            => ['stringValue' => $uid_session],
@@ -91,12 +101,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $accion === 'guardar') {
         'telefono'       => ['stringValue' => $telefono],
         'direccion'      => ['stringValue' => $direccion],
         'color_primario' => ['stringValue' => $color_primario],
+        'metodo_ventas'  => ['stringValue' => $metodo_ventas],
+        'delivery_tipo'  => ['stringValue' => $delivery_tipo],
+        'delivery_precio'=> ['stringValue' => $delivery_precio],
+        'whatsapp'       => ['stringValue' => $whatsapp],
     ];
 
-    // ── Logo upload ──────────────────────────────────────────────────────────
+    // ── Logo upload ──────────────────────────────────────────
     if (!empty($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
         $file     = $_FILES['logo'];
-        $maxBytes = 5 * 1024 * 1024; // 5 MB
+        $maxBytes = 5 * 1024 * 1024;
 
         if ($file['size'] > $maxBytes) {
             http_response_code(422);
@@ -104,7 +118,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $accion === 'guardar') {
             exit;
         }
 
-        // Determine extension; client sends webp but allow fallbacks
         $mime = mime_content_type($file['tmp_name']);
         $extMap = [
             'image/webp' => 'webp',
@@ -114,9 +127,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $accion === 'guardar') {
         ];
         $ext = $extMap[$mime] ?? 'webp';
 
-        $key      = "tiendas/{$slug}/logo/" . uniqid('', true) . ".{$ext}";
-        $tmpPath  = $file['tmp_name'];
-        $fileData = file_get_contents($tmpPath);
+        $key     = "tiendas/{$slug}/logo/" . uniqid('', true) . ".{$ext}";
+        $fileData = file_get_contents($file['tmp_name']);
 
         if ($fileData === false) {
             http_response_code(500);
@@ -124,7 +136,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $accion === 'guardar') {
             exit;
         }
 
-        // Upload to Wasabi usando el mismo patrón que api_productos.php
         try {
             $s3 = getWasabiClient();
             $s3->putObject([
@@ -145,10 +156,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $accion === 'guardar') {
         $fields['logo'] = ['stringValue' => $logoUrl];
     }
 
-    // ── PATCH Firestore con updateMask para no borrar uid ni otros campos ──────
-    $body = ['fields' => $fields];
-
-    // Construir updateMask solo con los campos que estamos actualizando
+    // ── PATCH Firestore con updateMask ───────────────────────
+    $body      = ['fields' => $fields];
     $maskFields = array_keys($fields);
     $maskQuery  = implode('&', array_map(fn($f) => 'updateMask.fieldPaths=' . urlencode($f), $maskFields));
 
@@ -164,7 +173,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $accion === 'guardar') {
         exit;
     }
 
-    // Return updated logo URL if it was changed
     $responseData = ['ok' => true];
     if (isset($fields['logo'])) {
         $responseData['logo'] = $fields['logo']['stringValue'];
@@ -175,7 +183,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $accion === 'guardar') {
     exit;
 }
 
-// ─── Fallback ─────────────────────────────────────────────────────────────────
 ob_end_clean();
 http_response_code(400);
 echo json_encode(['error' => 'Acción no válida']);

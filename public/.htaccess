@@ -8,6 +8,7 @@ RewriteRule ^panel$               panel/index.php      [L]
 RewriteRule ^panel/productos$     panel/productos.php  [L]
 RewriteRule ^tienda/([a-z0-9-]+)$ tienda.php?slug=$1  [L,QSA]
 RewriteRule ^panel/configuracion$ panel/configuracion.php [L]
+RewriteRule ^panel/pedidos$  panel/pedidos.php  [L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
