@@ -1,0 +1,6 @@
+cat > .gitignore << 'EOF'
+vendor/
+config/firebase.php
+config/wasabi.php
+*.env
+EOF

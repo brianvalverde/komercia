@@ -1,0 +1,15 @@
+Options -Indexes
+RewriteEngine On
+
+RewriteRule ^registro$            registro.php         [L]
+RewriteRule ^login$               login.php            [L]
+RewriteRule ^recuperar$             recuperar.php        [L]
+RewriteRule ^panel$               panel/index.php      [L]
+RewriteRule ^panel/productos$     panel/productos.php  [L]
+RewriteRule ^tienda/([a-z0-9-]+)$ tienda.php?slug=$1  [L,QSA]
+RewriteRule ^panel/configuracion$ panel/configuracion.php [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} ^/api/
+RewriteRule ^api/(.+)$            api/$1.php           [L]
