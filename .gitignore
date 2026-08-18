@@ -4,3 +4,4 @@ config/firebase.php
 config/wasabi.php
 *.env
 EOF
+config/firebase.json
