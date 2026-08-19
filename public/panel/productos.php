@@ -491,18 +491,19 @@ document.getElementById('form-producto').addEventListener('submit', function(e) 
   btn.disabled = true; btn.textContent = 'Guardando...';
 
   const id     = document.getElementById('producto-id').value;
-  const accion = id ? 'actualizar' : 'crear';
+  const accion = id ? 'editar' : 'crear';
   const fd     = new FormData();
 
-  fd.append('id',                 id);
-  fd.append('nombre',             document.getElementById('p-nombre').value);
-  fd.append('descripcion',        document.getElementById('p-descripcion').value);
-  fd.append('precio',             document.getElementById('p-precio').value);
-  fd.append('stock',              document.getElementById('p-stock').value);
-  fd.append('categoria',          document.getElementById('p-categoria').value);
-  fd.append('promociones',        JSON.stringify(getPromociones()));
-  fd.append('imagenes_eliminar',  JSON.stringify(imagenesEliminar));
-  fd.append('videos_eliminar',    JSON.stringify(videosEliminar));
+  fd.append('id',                   id);
+  fd.append('nombre',               document.getElementById('p-nombre').value);
+  fd.append('descripcion',          document.getElementById('p-descripcion').value);
+  fd.append('precio',               document.getElementById('p-precio').value);
+  fd.append('stock',                document.getElementById('p-stock').value);
+  fd.append('categoria',            document.getElementById('p-categoria').value);
+  fd.append('promociones',          JSON.stringify(getPromociones()));
+  fd.append('imagenes_eliminar',    JSON.stringify(imagenesEliminar));
+  fd.append('videos_eliminar',      JSON.stringify(videosEliminar));
+  fd.append('imagenes_existentes',  JSON.stringify(imagenesExistentes.map(img => img.url || img)));
   imagenesNuevas.forEach(f => fd.append('imagenes[]', f));
   videosNuevos.forEach(f   => fd.append('videos[]',   f));
 

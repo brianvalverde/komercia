@@ -207,7 +207,7 @@ a{text-decoration:none;color:inherit}
 .video-thumb{width:72px;height:72px;border-radius:10px;background:#111;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid transparent;font-size:22px;color:#fff;transition:.2s}
 .video-thumb:hover,.video-thumb.active{border-color:var(--primary)}
 .gallery-main{position:relative}
-.main-img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:14px;display:block}
+.zoom-lens{position:absolute;width:110px;height:110px;border:2px solid #ff6a00;border-radius:6px;pointer-events:none;display:none;z-index:10;box-sizing:border-box}.zoom-result{display:none;position:absolute;left:calc(100% + 12px);top:0;width:360px;height:360px;border:1px solid #e0e0e0;border-radius:14px;overflow:hidden;background:#fff;z-index:20;box-shadow:0 8px 32px rgba(0,0,0,.14)}@media(max-width:900px){.zoom-result{display:none!important}}.main-img{width:100%;aspect-ratio:1;object-fit:contain;background:#fff;border-radius:14px;display:block}
 .main-video{width:100%;aspect-ratio:1;border-radius:14px;display:none;background:#000}
 .gallery-arrows{position:absolute;top:50%;transform:translateY(-50%);width:100%;display:flex;justify-content:space-between;pointer-events:none;padding:0 10px}
 .gallery-arrow{width:36px;height:36px;background:rgba(255,255,255,.85);border:none;border-radius:50%;cursor:pointer;font-size:18px;pointer-events:all;transition:.2s;display:flex;align-items:center;justify-content:center}
@@ -426,7 +426,7 @@ a{text-decoration:none;color:inherit}
     <!-- Imagen principal -->
     <div class="gallery-main">
       <img id="main-img" src="<?= htmlspecialchars($pImagenPrinc) ?>" class="main-img" alt="<?= htmlspecialchars($pNombre) ?>">
-      <video id="main-video" class="main-video" controls></video>
+      <div class="zoom-lens" id="zoom-lens"></div><div class="zoom-result" id="zoom-result"><img id="zoom-img" style="position:absolute;pointer-events:none;max-width:none" alt=""></div><video id="main-video" class="main-video" controls></video>
       <?php if (count($pImagenes) + count($pVideos) > 1): ?>
       <div class="gallery-arrows">
         <button class="gallery-arrow" onclick="navMedia(-1)">‹</button>
@@ -904,6 +904,6 @@ window.addEventListener('scroll', () => {
 
 // Init cart
 updateCartUI();
-</script>
+;(function(){var wrap=document.querySelector(".gallery-main"),lens=document.getElementById("zoom-lens"),result=document.getElementById("zoom-result"),zi=document.getElementById("zoom-img"),on=false;function init(){var img=document.getElementById("main-img");if(!img||img.style.display==="none")return;zi.src=img.src;}wrap.addEventListener("mouseenter",function(){var img=document.getElementById("main-img");if(!img||img.style.display==="none")return;init();on=true;lens.style.display="block";result.style.display="block";});wrap.addEventListener("mouseleave",function(){on=false;lens.style.display="none";result.style.display="none";});wrap.addEventListener("mousemove",function(e){if(!on)return;var img=document.getElementById("main-img");if(!img||img.style.display==="none")return;var b=img.getBoundingClientRect(),rx=result.offsetWidth/lens.offsetWidth,ry=result.offsetHeight/lens.offsetHeight,lx=Math.max(0,Math.min(e.clientX-b.left-lens.offsetWidth/2,b.width-lens.offsetWidth)),ly=Math.max(0,Math.min(e.clientY-b.top-lens.offsetHeight/2,b.height-lens.offsetHeight));lens.style.left=lx+"px";lens.style.top=ly+"px";zi.style.left=-(lx*rx)+"px";zi.style.top=-(ly*ry)+"px";zi.style.width=(b.width*rx)+"px";zi.style.height=(b.height*ry)+"px";});var orig=window.showMedia;if(orig)window.showMedia=function(t,s){orig(t,s);if(t!=="vid")setTimeout(init,60);else{lens.style.display="none";result.style.display="none";on=false;}};})();</script>
 </body>
 </html>

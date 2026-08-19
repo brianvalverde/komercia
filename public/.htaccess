@@ -1,6 +1,5 @@
 Options -Indexes
 RewriteEngine On
-    RewriteRule ^tienda/([a-z0-9-]+)/producto/([a-z0-9_]+)$ producto.php?slug=$1&id=$2 [L,QSA]
 
 RewriteRule ^registro$            registro.php         [L]
 RewriteRule ^login$               login.php            [L]
