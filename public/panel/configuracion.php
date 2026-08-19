@@ -11,428 +11,529 @@ $slug = $_SESSION['slug'];
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Configuración — Komercia</title>
+<title>Configuración de Tienda — Komercia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--orange:#ff6a00;--orange-dark:#e05a00;--sidebar-bg:#111;--sidebar-width:240px;--body-bg:#f5f5f5;--card-bg:#fff;--text:#1a1a1a;--text-muted:#6b7280;--border:#e5e7eb;--radius:12px;--transition:.2s ease}
-body{font-family:'Inter',sans-serif;background:var(--body-bg);color:var(--text);min-height:100vh;display:flex}
-.sidebar{width:var(--sidebar-width);background:var(--sidebar-bg);min-height:100vh;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:200;transition:transform var(--transition)}
-.sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid #222}
-.sidebar-logo span{font-size:1.3rem;font-weight:700;color:var(--orange);letter-spacing:-.5px}
-.sidebar-nav{flex:1;padding:16px 12px;display:flex;flex-direction:column;gap:4px}
-.sidebar-nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:#aaa;text-decoration:none;font-size:.875rem;font-weight:500;transition:background var(--transition),color var(--transition)}
-.sidebar-nav a:hover{background:#1e1e1e;color:#fff}
-.sidebar-nav a.active{background:var(--orange);color:#fff}
-.sidebar-footer{padding:16px 20px;border-top:1px solid #222}
-.sidebar-footer a{color:#aaa;text-decoration:none;font-size:.8rem;display:flex;align-items:center;gap:8px}
-.sidebar-footer a:hover{color:#fff}
-.main{margin-left:var(--sidebar-width);flex:1;display:flex;flex-direction:column}
-.topbar{background:var(--card-bg);padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
-.topbar-left{display:flex;align-items:center;gap:12px}
-.hamburger{display:none;background:none;border:none;font-size:22px;cursor:pointer;color:var(--text)}
-.topbar h1{font-size:1.1rem;font-weight:600}
-.topbar-right{display:flex;align-items:center;gap:12px}
-.btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:.875rem;font-weight:500;transition:.2s;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
-.btn-outline{background:var(--card-bg);color:var(--text);border:1px solid var(--border)}
-.btn-outline:hover{background:var(--body-bg)}
-.btn-sm{font-size:.75rem;padding:5px 12px}
-.avatar{width:36px;height:36px;border-radius:50%;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem}
-.content{padding:28px;max-width:780px}
-.section-card{background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--border);padding:24px;margin-bottom:20px}
-.section-title{font-size:1rem;font-weight:700;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
-.form-group{margin-bottom:18px}
-.form-group label{display:block;font-size:.8rem;font-weight:600;margin-bottom:6px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
-.form-group input,.form-group textarea,.form-group select{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:.9rem;font-family:'Inter',sans-serif;color:var(--text);background:#fff;outline:none;transition:border-color var(--transition)}
-.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--orange)}
-.form-group textarea{resize:vertical;min-height:90px}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-/* Logo upload */
-.logo-wrap{display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap}
-.logo-preview-box{width:100px;height:100px;border-radius:10px;border:2px dashed var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fafafa;flex-shrink:0}
-.logo-preview-box img{width:100%;height:100%;object-fit:contain}
-.logo-preview-box .placeholder{font-size:2rem;color:#ddd}
-.logo-drop{flex:1;border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;background:#fafafa;position:relative;transition:.2s}
-.logo-drop:hover,.logo-drop.over{border-color:var(--orange);background:#fff8f4}
-.logo-drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-.logo-drop .drop-icon{font-size:1.8rem;margin-bottom:6px}
-.logo-drop p{font-size:.8rem;color:var(--text-muted)}
-.logo-drop p strong{color:var(--orange)}
-/* Color picker */
-.color-row{display:flex;align-items:center;gap:12px}
-.color-row input[type=color]{width:48px;height:40px;border:none;background:none;cursor:pointer;padding:0;border-radius:8px;overflow:hidden}
-.color-row input[type=text]{flex:1}
-.color-preview{width:40px;height:40px;border-radius:8px;border:1px solid var(--border);flex-shrink:0}
-/* Radio options */
-.radio-group{display:flex;gap:12px;flex-wrap:wrap}
-.radio-option{flex:1;min-width:140px;border:2px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:10px}
-.radio-option:hover{border-color:var(--orange)}
-.radio-option.selected{border-color:var(--orange);background:#fff8f4}
-.radio-option input[type=radio]{accent-color:var(--orange)}
-.radio-option .ro-icon{font-size:1.4rem}
-.radio-option .ro-text strong{display:block;font-size:.875rem;font-weight:600}
-.radio-option .ro-text span{font-size:.78rem;color:var(--text-muted)}
-/* Delivery precio */
-#delivery-precio-wrap{display:none}
-/* Save bar */
-.save-bar{background:var(--card-bg);border-top:1px solid var(--border);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;bottom:0}
-.btn-save{background:var(--orange);color:#fff;padding:10px 28px;border-radius:8px;border:none;cursor:pointer;font-size:.9rem;font-weight:600;transition:.2s;font-family:'Inter',sans-serif}
-.btn-save:hover{background:var(--orange-dark)}
-.btn-save:disabled{opacity:.6;cursor:not-allowed}
-.save-msg{font-size:.85rem;color:var(--text-muted)}
-.save-ok{color:#16a34a;font-weight:600}
-.save-err{color:#dc2626;font-weight:600}
-/* Overlay sidebar */
-.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:190}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:100vh;display:flex}
+
+/* ── Sidebar ─────────────────────────────────────── */
+.sidebar{width:220px;background:#fff;border-right:1px solid #e8eaf0;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;padding:24px 0}
+.sidebar-logo{padding:0 20px 24px;border-bottom:1px solid #e8eaf0;margin-bottom:16px}
+.sidebar-logo span{font-size:22px;font-weight:700;background:linear-gradient(135deg,#ff6a00,#ee0979);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sidebar nav a{display:flex;align-items:center;gap:10px;padding:10px 20px;color:#555;text-decoration:none;font-size:14px;border-radius:8px;margin:2px 8px;transition:all .2s}
+.sidebar nav a:hover{background:#fff5f0;color:#ff6a00}
+.sidebar nav a.active{background:linear-gradient(135deg,#ff6a00,#ee0979);color:#fff;font-weight:600}
+.sidebar nav a svg{width:18px;height:18px;flex-shrink:0}
+
+/* ── Main ────────────────────────────────────────── */
+.main{margin-left:220px;flex:1;padding:32px}
+.page-header{margin-bottom:28px}
+.page-header h1{font-size:22px;font-weight:700;color:#1a1a2e}
+.page-header p{color:#777;font-size:14px;margin-top:4px}
+
+/* ── Card ────────────────────────────────────────── */
+.card{background:#fff;border-radius:16px;padding:28px;margin-bottom:24px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.card-title{font-size:15px;font-weight:700;color:#1a1a2e;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.card-title svg{width:18px;height:18px;color:#ff6a00}
+
+/* ── Form grid ───────────────────────────────────── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-grid.single{grid-template-columns:1fr}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group label{font-size:13px;font-weight:600;color:#444}
+.form-group input,.form-group textarea,.form-group select{border:1.5px solid #e0e0e0;border-radius:10px;padding:10px 14px;font-size:14px;font-family:inherit;outline:none;transition:border-color .2s;background:#fafafa;color:#1a1a2e}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:#ff6a00;background:#fff}
+.form-group textarea{resize:vertical;min-height:80px}
+.form-group .hint{font-size:12px;color:#aaa}
+.color-wrap{display:flex;align-items:center;gap:10px}
+.color-wrap input[type=color]{width:44px;height:44px;border:none;padding:2px;border-radius:8px;cursor:pointer;background:none}
+
+/* ── Logo preview ────────────────────────────────── */
+.logo-area{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.logo-preview{width:90px;height:90px;border-radius:12px;border:2px dashed #e0e0e0;object-fit:contain;background:#f5f5f5;cursor:pointer;transition:border-color .2s}
+.logo-preview:hover{border-color:#ff6a00}
+.logo-upload-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;background:#f5f5f5;border:1.5px solid #e0e0e0;border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;color:#444;transition:all .2s}
+.logo-upload-btn:hover{border-color:#ff6a00;color:#ff6a00}
+
+/* ── Banner section ──────────────────────────────── */
+.banners-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:16px}
+.banner-item{position:relative;border-radius:12px;overflow:hidden;background:#f5f5f5;aspect-ratio:16/7;cursor:grab}
+.banner-item img{width:100%;height:100%;object-fit:cover;pointer-events:none}
+.banner-item .banner-del{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;transition:background .2s}
+.banner-item .banner-del:hover{background:#ee0979}
+.banner-item .drag-handle{position:absolute;top:6px;left:6px;background:rgba(0,0,0,.45);color:#fff;border-radius:6px;padding:4px 6px;font-size:12px;cursor:grab}
+.banner-upload-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:linear-gradient(135deg,#ff6a00,#ee0979);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;transition:opacity .2s}
+.banner-upload-btn:hover{opacity:.88}
+.banner-upload-btn:disabled{opacity:.5;cursor:not-allowed}
+.banner-count{font-size:13px;color:#888;margin-left:10px}
+.banner-hint{font-size:12px;color:#aaa;margin-top:8px}
+
+/* ── Social media ────────────────────────────────── */
+.social-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.social-input-wrap{position:relative}
+.social-input-wrap .social-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px}
+.social-input-wrap input{padding-left:38px}
+
+/* ── Delivery section ────────────────────────────── */
+.delivery-options{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.delivery-opt{display:flex;align-items:center;gap:8px;padding:10px 16px;border:1.5px solid #e0e0e0;border-radius:10px;cursor:pointer;transition:all .2s;user-select:none}
+.delivery-opt.active{border-color:#ff6a00;background:#fff5f0;color:#ff6a00;font-weight:600}
+.delivery-opt input{display:none}
+#precio-delivery-wrap{margin-top:4px}
+
+/* ── Save btn ────────────────────────────────────── */
+.btn-save{display:inline-flex;align-items:center;gap:8px;padding:12px 28px;background:linear-gradient(135deg,#ff6a00,#ee0979);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .2s;margin-top:8px}
+.btn-save:hover{opacity:.88}
+.btn-save:disabled{opacity:.5;cursor:not-allowed}
+
+/* ── Toast ───────────────────────────────────────── */
+#toast{position:fixed;bottom:28px;right:28px;background:#1a1a2e;color:#fff;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:500;opacity:0;transform:translateY(12px);transition:all .3s;z-index:999;pointer-events:none}
+#toast.show{opacity:1;transform:translateY(0)}
+#toast.error{background:#ee0979}
+
+/* ── Progress ────────────────────────────────────── */
+.upload-progress{display:none;margin-top:10px}
+.progress-bar-wrap{background:#f0f0f0;border-radius:99px;height:8px;overflow:hidden}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,#ff6a00,#ee0979);border-radius:99px;width:0%;transition:width .2s}
+.progress-text{font-size:12px;color:#888;margin-top:4px}
+
+/* ── Section divider ─────────────────────────────── */
+.section-sep{border:none;border-top:1px solid #f0f0f0;margin:8px 0 20px}
+
 @media(max-width:768px){
-  .sidebar{transform:translateX(calc(-1 * var(--sidebar-width)))}
-  .sidebar.open{transform:none}
-  .sidebar-overlay.show{display:block}
-  .main{margin-left:0}
-  .hamburger{display:block}
-  .form-row{grid-template-columns:1fr}
-  .radio-group{flex-direction:column}
+  .sidebar{transform:translateX(-100%)}
+  .main{margin-left:0;padding:20px}
+  .form-grid{grid-template-columns:1fr}
+  .social-row{grid-template-columns:1fr}
 }
 </style>
 </head>
 <body>
-<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
 
-<aside class="sidebar" id="sidebar">
-  <div class="sidebar-logo"><span>⚡ Komercia</span></div>
-  <nav class="sidebar-nav">
-    <a href="/panel"><span>📊</span> Dashboard</a>
-    <a href="/panel/productos"><span>📦</span> Productos</a>
-    <a href="/panel/pedidos"><span>🛒</span> Pedidos</a>
-    <a href="#"><span>🏪</span> Mi Tienda</a>
-    <a href="#"><span>💎</span> Mi Plan</a>
-    <a href="/panel/configuracion" class="active"><span>⚙️</span> Configuración</a>
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo"><span>Komercia</span></div>
+  <nav>
+    <a href="/panel">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </a>
+    <a href="/panel/productos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 3H8a2 2 0 00-2 2v2h12V5a2 2 0 00-2-2z"/></svg>
+      Productos
+    </a>
+    <a href="/panel/pedidos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      Pedidos
+    </a>
+    <a href="/panel/configuracion" class="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 003.41 3.48M3.41 3.48A10 10 0 004.93 19.07M4.93 19.07A10 10 0 0020.59 20.52M20.59 20.52A10 10 0 0019.07 4.93"/></svg>
+      Configuración
+    </a>
   </nav>
-  <div class="sidebar-footer">
-    <a href="#" onclick="logout()">🚪 Cerrar sesión</a>
-  </div>
 </aside>
 
-<div class="main">
-  <div class="topbar">
-    <div class="topbar-left">
-      <button class="hamburger" onclick="toggleSidebar()">☰</button>
-      <h1>⚙️ Configuración</h1>
-    </div>
-    <div class="topbar-right">
-      <a id="link-tienda" href="#" target="_blank" class="btn btn-outline btn-sm">🏪 Ver mi tienda</a>
-      <div class="avatar" id="avatar-inicial">?</div>
-    </div>
+<!-- Main -->
+<main class="main">
+  <div class="page-header">
+    <h1>⚙️ Configuración de tu tienda</h1>
+    <p>Personaliza la información, apariencia y opciones de venta.</p>
   </div>
 
-  <div class="content">
-
-    <!-- SECCIÓN 1: Información de la tienda -->
-    <div class="section-card">
-      <div class="section-title">🏪 Información de la tienda</div>
-
+  <!-- Información general -->
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Información general
+    </div>
+    <div class="form-grid" style="margin-bottom:16px">
       <div class="form-group">
         <label>Nombre de la tienda *</label>
-        <input type="text" id="nombre" placeholder="Ej: Mi Tienda Online">
+        <input type="text" id="nombre" placeholder="Mi tienda genial" maxlength="80">
       </div>
-
+      <div class="form-group">
+        <label>Correo de contacto</label>
+        <input type="email" id="email" placeholder="hola@mitienda.com">
+      </div>
+    </div>
+    <div class="form-grid single" style="margin-bottom:16px">
       <div class="form-group">
         <label>Descripción</label>
-        <textarea id="descripcion" placeholder="Cuéntale a tus clientes de qué trata tu tienda..."></textarea>
+        <textarea id="descripcion" placeholder="Describe tu tienda en pocas palabras..."></textarea>
       </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label>Correo electrónico</label>
-          <input type="email" id="email" placeholder="tu@email.com">
-        </div>
-        <div class="form-group">
-          <label>Teléfono</label>
-          <input type="tel" id="telefono" placeholder="+51 999 999 999">
-        </div>
+    </div>
+    <div class="form-grid" style="margin-bottom:16px">
+      <div class="form-group">
+        <label>Teléfono / WhatsApp</label>
+        <input type="text" id="telefono" placeholder="+51 999 999 999">
       </div>
-
       <div class="form-group">
         <label>Dirección</label>
-        <input type="text" id="direccion" placeholder="Av. Principal 123, Lima">
+        <input type="text" id="direccion" placeholder="Jr. Ejemplo 123, Lima">
       </div>
     </div>
-
-    <!-- SECCIÓN 2: Marca -->
-    <div class="section-card">
-      <div class="section-title">🎨 Marca y apariencia</div>
-
-      <div class="form-group">
-        <label>Logo de la tienda</label>
-        <div class="logo-wrap">
-          <div class="logo-preview-box" id="logo-preview-box">
-            <img id="logo-img" src="" alt="Logo" style="display:none">
-            <span class="placeholder" id="logo-placeholder">🏪</span>
-          </div>
-          <div class="logo-drop" id="logo-drop">
-            <input type="file" id="logo-file" accept="image/jpeg,image/png,image/webp,image/gif">
-            <div class="drop-icon">🖼️</div>
-            <p>Arrastra tu logo aquí o <strong>haz clic</strong></p>
-            <p>JPG, PNG, WEBP · máx 5 MB</p>
-          </div>
-        </div>
-      </div>
-
+    <div class="form-grid" style="grid-template-columns:auto 1fr;align-items:end">
       <div class="form-group">
         <label>Color principal</label>
-        <div class="color-row">
-          <input type="color" id="color-picker" value="#ff6a00" oninput="syncColor(this.value)">
-          <input type="text" id="color-hex" value="#ff6a00" placeholder="#ff6a00" oninput="syncColorFromText(this.value)">
-          <div class="color-preview" id="color-preview" style="background:#ff6a00"></div>
+        <div class="color-wrap">
+          <input type="color" id="color_primario" value="#ff6a00">
+          <input type="text" id="color_hex" style="width:110px" placeholder="#ff6a00" maxlength="7">
         </div>
       </div>
-    </div>
-
-    <!-- SECCIÓN 3: Ventas y envío -->
-    <div class="section-card">
-      <div class="section-title">🛒 Ventas y envío</div>
-
-      <div class="form-group">
-        <label>Número de WhatsApp</label>
-        <input type="tel" id="whatsapp" placeholder="51999999999 (sin + ni espacios)">
-        <small style="color:#888;font-size:12px;margin-top:4px;display:block">Incluye el código de país. Ej: 51999999999</small>
-      </div>
-
       <div class="form-group">
         <label>Método de ventas</label>
-        <div class="radio-group">
-          <label class="radio-option selected" id="ro-whatsapp">
-            <input type="radio" name="metodo_ventas" value="whatsapp" checked onchange="selectMetodo('whatsapp')">
-            <span class="ro-icon">💬</span>
-            <div class="ro-text">
-              <strong>WhatsApp</strong>
-              <span>El pedido se envía por WhatsApp</span>
-            </div>
-          </label>
-          <label class="radio-option" id="ro-formulario">
-            <input type="radio" name="metodo_ventas" value="formulario" onchange="selectMetodo('formulario')">
-            <span class="ro-icon">📋</span>
-            <div class="ro-text">
-              <strong>Formulario</strong>
-              <span>El cliente llena un formulario</span>
-            </div>
-          </label>
+        <select id="metodo_ventas">
+          <option value="whatsapp">WhatsApp (enlace directo)</option>
+          <option value="formulario">Formulario de pedido</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logo -->
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      Logo de la tienda
+    </div>
+    <div class="logo-area">
+      <img id="logo-preview" class="logo-preview" src="/assets/img/placeholder.png" alt="Logo" title="Clic para cambiar">
+      <div>
+        <label class="logo-upload-btn" for="logo-input">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Subir logo
+        </label>
+        <input type="file" id="logo-input" accept="image/*" style="display:none">
+        <p class="hint" style="margin-top:8px;font-size:12px;color:#aaa">JPG, PNG o WebP · Máx. 5 MB</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Banners -->
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="10" rx="2"/><path d="M17 7V5a2 2 0 00-2-2H9a2 2 0 00-2 2v2"/></svg>
+      Banners del carrusel
+    </div>
+    <p style="font-size:13px;color:#888;margin-bottom:16px">Hasta 5 banners. Arrastra para reordenar. Recomendado: 1200×450px.</p>
+
+    <div id="banners-grid" class="banners-grid"></div>
+
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px">
+      <label class="banner-upload-btn" id="banner-upload-label" for="banner-input">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Subir banner
+      </label>
+      <input type="file" id="banner-input" accept="image/jpeg,image/png,image/webp" style="display:none">
+      <span class="banner-count" id="banner-count">0 / 5</span>
+    </div>
+    <div class="upload-progress" id="banner-progress">
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="banner-bar"></div></div>
+      <div class="progress-text" id="banner-progress-text">Subiendo...</div>
+    </div>
+    <p class="banner-hint">JPG, PNG o WebP · Máx. 5 MB por imagen</p>
+  </div>
+
+  <!-- Redes sociales -->
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      Redes sociales
+    </div>
+    <div class="social-row">
+      <div class="form-group">
+        <label>Facebook</label>
+        <div class="social-input-wrap">
+          <svg class="social-icon" viewBox="0 0 24 24" fill="#1877f2"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+          <input type="url" id="facebook" placeholder="https://facebook.com/tutienda">
         </div>
       </div>
-
       <div class="form-group">
-        <label>Delivery / Envío</label>
-        <div class="radio-group">
-          <label class="radio-option selected" id="ro-no_incluido">
-            <input type="radio" name="delivery_tipo" value="no_incluido" checked onchange="selectDelivery('no_incluido')">
-            <span class="ro-icon">📦</span>
-            <div class="ro-text">
-              <strong>No incluido</strong>
-              <span>A coordinar con el cliente</span>
-            </div>
-          </label>
-          <label class="radio-option" id="ro-gratis">
-            <input type="radio" name="delivery_tipo" value="gratis" onchange="selectDelivery('gratis')">
-            <span class="ro-icon">🎁</span>
-            <div class="ro-text">
-              <strong>Gratis</strong>
-              <span>Envío gratuito</span>
-            </div>
-          </label>
-          <label class="radio-option" id="ro-costo_fijo">
-            <input type="radio" name="delivery_tipo" value="costo_fijo" onchange="selectDelivery('costo_fijo')">
-            <span class="ro-icon">💰</span>
-            <div class="ro-text">
-              <strong>Costo fijo</strong>
-              <span>Precio de envío definido</span>
-            </div>
-          </label>
+        <label>Instagram</label>
+        <div class="social-input-wrap">
+          <svg class="social-icon" viewBox="0 0 24 24" fill="none" stroke="url(#ig-grad)" stroke-width="2">
+            <defs><linearGradient id="ig-grad" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f09433"/><stop offset="50%" stop-color="#e6683c"/><stop offset="100%" stop-color="#bc1888"/></linearGradient></defs>
+            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="#bc1888" stroke="none"/>
+          </svg>
+          <input type="url" id="instagram" placeholder="https://instagram.com/tutienda">
         </div>
-        <div id="delivery-precio-wrap" style="margin-top:12px">
-          <label style="font-size:.8rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Costo de envío (S/.)</label>
-          <input type="number" id="delivery-precio" placeholder="0.00" step="0.01" min="0" style="margin-top:6px;width:160px">
+      </div>
+      <div class="form-group">
+        <label>TikTok</label>
+        <div class="social-input-wrap">
+          <svg class="social-icon" viewBox="0 0 24 24" fill="#000"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.75a4.85 4.85 0 01-1.01-.06z"/></svg>
+          <input type="url" id="tiktok" placeholder="https://tiktok.com/@tutienda">
         </div>
       </div>
     </div>
-
-  </div><!-- /content -->
-
-  <div class="save-bar">
-    <span class="save-msg" id="save-msg"></span>
-    <button class="btn-save" id="btn-save" onclick="guardar()">Guardar cambios</button>
   </div>
-</div><!-- /main -->
+
+  <!-- WhatsApp -->
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="#25D366" width="18" height="18"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12.002 2a9.998 9.998 0 00-8.637 14.998L2 22l5.138-1.349A9.998 9.998 0 1012.002 2zm0 18.18a8.18 8.18 0 01-4.17-1.143l-.3-.178-3.048.8.815-2.98-.196-.307a8.18 8.18 0 1110.63 1.214 8.147 8.147 0 01-3.731.594z"/></svg>
+      WhatsApp de contacto
+    </div>
+    <div class="form-grid" style="grid-template-columns:1fr 2fr">
+      <div class="form-group">
+        <label>Número de WhatsApp</label>
+        <input type="text" id="whatsapp" placeholder="+51999999999">
+        <span class="hint">Con código de país, sin espacios</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delivery -->
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v3m0 0h3l3 3v4h-3m-3 0H9m3 0a2 2 0 11-4 0 2 2 0 014 0zm8 0a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+      Delivery / Envío
+    </div>
+    <div class="delivery-options">
+      <label class="delivery-opt" id="opt-no_incluido">
+        <input type="radio" name="delivery" value="no_incluido"> 📦 No incluido
+      </label>
+      <label class="delivery-opt" id="opt-gratis">
+        <input type="radio" name="delivery" value="gratis"> 🆓 Delivery gratis
+      </label>
+      <label class="delivery-opt" id="opt-costo_fijo">
+        <input type="radio" name="delivery" value="costo_fijo"> 💰 Costo fijo
+      </label>
+    </div>
+    <div id="precio-delivery-wrap" style="display:none" class="form-grid" style="grid-template-columns:200px 1fr">
+      <div class="form-group">
+        <label>Precio de delivery</label>
+        <input type="number" id="delivery_precio" placeholder="5.00" min="0" step="0.50">
+      </div>
+    </div>
+  </div>
+
+  <!-- Save -->
+  <div>
+    <button class="btn-save" id="btn-save" onclick="guardarTienda()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Guardar cambios
+    </button>
+  </div>
+</main>
+
+<div id="toast"></div>
 
 <script>
-let logoFile = null;
+const slug = '<?= htmlspecialchars($slug) ?>';
 
-// ── Sesión ────────────────────────────────────────────────────
-fetch('/api/sesion')
-  .then(r => r.json())
-  .then(d => {
-    if (!d.ok) { location.href = '/login'; return; }
-    document.getElementById('avatar-inicial').textContent = d.nombre.charAt(0).toUpperCase();
-    document.getElementById('link-tienda').href = '/tienda/' + d.slug;
-    cargarDatos();
+// ── Toast ─────────────────────────────────────────────────────
+function toast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show' + (isError ? ' error' : '');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.className = '', 3500);
+}
+
+// ── Color sync ────────────────────────────────────────────────
+const colorPicker = document.getElementById('color_primario');
+const colorHex    = document.getElementById('color_hex');
+colorPicker.addEventListener('input', () => { colorHex.value = colorPicker.value; });
+colorHex.addEventListener('input', () => {
+  if (/^#[0-9a-fA-F]{6}$/.test(colorHex.value)) colorPicker.value = colorHex.value;
+});
+
+// ── Delivery toggle ───────────────────────────────────────────
+document.querySelectorAll('input[name=delivery]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.querySelectorAll('.delivery-opt').forEach(o => o.classList.remove('active'));
+    r.closest('.delivery-opt').classList.add('active');
+    document.getElementById('precio-delivery-wrap').style.display = r.value === 'costo_fijo' ? 'block' : 'none';
   });
+});
+function setDelivery(val) {
+  const r = document.querySelector(`input[name=delivery][value="${val}"]`);
+  if (r) { r.checked = true; r.dispatchEvent(new Event('change')); }
+}
 
-function cargarDatos() {
-  fetch('/api/tienda?accion=obtener')
-    .then(r => r.json())
-    .then(d => {
-      document.getElementById('nombre').value      = d.nombre      || '';
-      document.getElementById('descripcion').value = d.descripcion || '';
-      document.getElementById('email').value       = d.email       || '';
-      document.getElementById('telefono').value    = d.telefono    || '';
-      document.getElementById('direccion').value   = d.direccion   || '';
-      document.getElementById('whatsapp').value    = d.whatsapp    || '';
+// ── Logo preview ──────────────────────────────────────────────
+document.getElementById('logo-input').addEventListener('change', function() {
+  const f = this.files[0]; if (!f) return;
+  const reader = new FileReader();
+  reader.onload = e => document.getElementById('logo-preview').src = e.target.result;
+  reader.readAsDataURL(f);
+});
+document.getElementById('logo-preview').addEventListener('click', () => document.getElementById('logo-input').click());
 
-      const color = d.color_primario || '#ff6a00';
-      document.getElementById('color-picker').value = color;
-      document.getElementById('color-hex').value    = color;
-      document.getElementById('color-preview').style.background = color;
+// ── Banners ───────────────────────────────────────────────────
+let banners = []; // array of URLs
 
-      if (d.logo) {
-        document.getElementById('logo-img').src = d.logo;
-        document.getElementById('logo-img').style.display = 'block';
-        document.getElementById('logo-placeholder').style.display = 'none';
-      }
+function renderBannersGrid() {
+  const grid  = document.getElementById('banners-grid');
+  const count = document.getElementById('banner-count');
+  const label = document.getElementById('banner-upload-label');
+  count.textContent = banners.length + ' / 5';
+  label.style.pointerEvents = banners.length >= 5 ? 'none' : '';
+  label.style.opacity = banners.length >= 5 ? '.5' : '1';
 
-      selectMetodo(d.metodo_ventas || 'whatsapp');
-      selectDelivery(d.delivery_tipo || 'no_incluido');
-      if (d.delivery_precio) document.getElementById('delivery-precio').value = d.delivery_precio;
+  grid.innerHTML = '';
+  banners.forEach((url, i) => {
+    const div = document.createElement('div');
+    div.className = 'banner-item';
+    div.draggable = true;
+    div.dataset.idx = i;
+    div.innerHTML = `
+      <span class="drag-handle" title="Arrastrar">⠿</span>
+      <img src="${url}" alt="Banner ${i+1}" loading="lazy">
+      <button class="banner-del" onclick="eliminarBanner('${url}')">✕</button>
+    `;
+    // Drag & drop
+    div.addEventListener('dragstart', e => e.dataTransfer.setData('text/plain', i));
+    div.addEventListener('dragover', e => e.preventDefault());
+    div.addEventListener('drop', e => {
+      e.preventDefault();
+      const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+      const toIdx   = parseInt(div.dataset.idx);
+      if (fromIdx === toIdx) return;
+      const moved = banners.splice(fromIdx, 1)[0];
+      banners.splice(toIdx, 0, moved);
+      renderBannersGrid();
+      reordenarBanners();
     });
-}
-
-// ── Color ─────────────────────────────────────────────────────
-function syncColor(val) {
-  document.getElementById('color-hex').value = val;
-  document.getElementById('color-preview').style.background = val;
-}
-function syncColorFromText(val) {
-  if (/^#[0-9a-fA-F]{6}$/.test(val)) {
-    document.getElementById('color-picker').value = val;
-    document.getElementById('color-preview').style.background = val;
-  }
-}
-
-// ── Logo ──────────────────────────────────────────────────────
-const logoDrop = document.getElementById('logo-drop');
-const logoFileInput = document.getElementById('logo-file');
-
-async function procesarLogo(file) {
-  if (file.size > 5 * 1024 * 1024) { alert('El logo supera 5MB'); return; }
-  const allowed = ['image/jpeg','image/png','image/webp','image/gif'];
-  if (!allowed.includes(file.type)) { alert('Formato no permitido'); return; }
-
-  if (file.type !== 'image/gif') {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const img = new Image();
-      img.onload = () => {
-        let w = img.width, h = img.height;
-        if (w > 400 || h > 400) {
-          if (w >= h) { h = Math.round(h * 400 / w); w = 400; }
-          else        { w = Math.round(w * 400 / h); h = 400; }
-        }
-        const c = document.createElement('canvas');
-        c.width = w; c.height = h;
-        c.getContext('2d').drawImage(img, 0, 0, w, h);
-        c.toBlob(blob => {
-          logoFile = new File([blob], 'logo.webp', { type: 'image/webp' });
-          showLogoPreview(URL.createObjectURL(logoFile));
-        }, 'image/webp', 0.88);
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  } else {
-    logoFile = file;
-    showLogoPreview(URL.createObjectURL(file));
-  }
-}
-
-function showLogoPreview(url) {
-  const img = document.getElementById('logo-img');
-  img.src = url;
-  img.style.display = 'block';
-  document.getElementById('logo-placeholder').style.display = 'none';
-}
-
-logoFileInput.addEventListener('change', e => { if (e.target.files[0]) procesarLogo(e.target.files[0]); });
-logoDrop.addEventListener('dragover', e => { e.preventDefault(); logoDrop.classList.add('over'); });
-logoDrop.addEventListener('dragleave', () => logoDrop.classList.remove('over'));
-logoDrop.addEventListener('drop', e => { e.preventDefault(); logoDrop.classList.remove('over'); if (e.dataTransfer.files[0]) procesarLogo(e.dataTransfer.files[0]); });
-
-// ── Radio helpers ─────────────────────────────────────────────
-function selectMetodo(val) {
-  ['whatsapp','formulario'].forEach(v => {
-    const el = document.getElementById('ro-' + v);
-    if (el) el.classList.toggle('selected', v === val);
-    const radio = el ? el.querySelector('input') : null;
-    if (radio) radio.checked = v === val;
+    grid.appendChild(div);
   });
 }
-function selectDelivery(val) {
-  ['no_incluido','gratis','costo_fijo'].forEach(v => {
-    const el = document.getElementById('ro-' + v);
-    if (el) el.classList.toggle('selected', v === val);
-    const radio = el ? el.querySelector('input') : null;
-    if (radio) radio.checked = v === val;
-  });
-  document.getElementById('delivery-precio-wrap').style.display = val === 'costo_fijo' ? 'block' : 'none';
-}
 
-// ── Guardar ───────────────────────────────────────────────────
-async function guardar() {
-  const btn = document.getElementById('btn-save');
-  const msg = document.getElementById('save-msg');
-  btn.disabled = true; btn.textContent = 'Guardando...'; msg.textContent = '';
+// Upload banner via XHR
+document.getElementById('banner-input').addEventListener('change', async function() {
+  const f = this.files[0]; if (!f) return;
+  this.value = '';
+  if (banners.length >= 5) { toast('Máximo 5 banners', true); return; }
+  if (f.size > 5*1024*1024) { toast('El banner supera los 5 MB', true); return; }
 
-  const color = document.getElementById('color-hex').value.trim() || '#ff6a00';
-  const metodo = document.querySelector('input[name="metodo_ventas"]:checked')?.value || 'whatsapp';
-  const delivery = document.querySelector('input[name="delivery_tipo"]:checked')?.value || 'no_incluido';
+  const prog = document.getElementById('banner-progress');
+  const bar  = document.getElementById('banner-bar');
+  const txt  = document.getElementById('banner-progress-text');
+  prog.style.display = 'block';
+  bar.style.width = '0%';
+  txt.textContent  = 'Subiendo...';
 
   const fd = new FormData();
-  fd.append('nombre',         document.getElementById('nombre').value);
-  fd.append('descripcion',    document.getElementById('descripcion').value);
-  fd.append('email',          document.getElementById('email').value);
-  fd.append('telefono',       document.getElementById('telefono').value);
-  fd.append('direccion',      document.getElementById('direccion').value);
-  fd.append('color_primario', color);
-  fd.append('metodo_ventas',  metodo);
-  fd.append('delivery_tipo',  delivery);
-  fd.append('delivery_precio',document.getElementById('delivery-precio').value || '0');
-  fd.append('whatsapp',       document.getElementById('whatsapp').value);
-  if (logoFile) fd.append('logo', logoFile);
+  fd.append('banner', f);
+
+  const xhr = new XMLHttpRequest();
+  xhr.upload.onprogress = ev => {
+    if (ev.lengthComputable) {
+      const pct = Math.round(ev.loaded / ev.total * 100);
+      bar.style.width = pct + '%';
+      txt.textContent = 'Subiendo... ' + pct + '%';
+    }
+  };
+  xhr.onload = () => {
+    prog.style.display = 'none';
+    if (xhr.status === 200) {
+      try {
+        const res = JSON.parse(xhr.responseText);
+        if (res.ok) {
+          banners = res.banners;
+          renderBannersGrid();
+          toast('✅ Banner subido');
+        } else {
+          toast(res.error || 'Error al subir banner', true);
+        }
+      } catch { toast('Error inesperado', true); }
+    } else {
+      toast('Error al subir banner', true);
+    }
+  };
+  xhr.onerror = () => { prog.style.display = 'none'; toast('Error de red', true); };
+  xhr.open('POST', `/api/tienda?accion=subir_banner`);
+  xhr.send(fd);
+});
+
+async function eliminarBanner(url) {
+  if (!confirm('¿Eliminar este banner?')) return;
+  const fd = new FormData();
+  fd.append('url', url);
+  const res = await fetch('/api/tienda?accion=eliminar_banner', {method:'POST', body:fd});
+  const data = await res.json();
+  if (data.ok) { banners = data.banners; renderBannersGrid(); toast('Banner eliminado'); }
+  else toast(data.error || 'Error al eliminar', true);
+}
+
+async function reordenarBanners() {
+  const fd = new FormData();
+  fd.append('banners', JSON.stringify(banners));
+  await fetch('/api/tienda?accion=reordenar_banners', {method:'POST', body:fd});
+}
+
+// ── Load store data ───────────────────────────────────────────
+async function cargarTienda() {
+  try {
+    const res  = await fetch('/api/tienda?accion=obtener');
+    const data = await res.json();
+
+    document.getElementById('nombre').value         = data.nombre || '';
+    document.getElementById('descripcion').value    = data.descripcion || '';
+    document.getElementById('email').value          = data.email || '';
+    document.getElementById('telefono').value       = data.telefono || '';
+    document.getElementById('direccion').value      = data.direccion || '';
+    document.getElementById('whatsapp').value       = data.whatsapp || '';
+    document.getElementById('facebook').value       = data.facebook || '';
+    document.getElementById('instagram').value      = data.instagram || '';
+    document.getElementById('tiktok').value         = data.tiktok || '';
+    colorPicker.value = data.color_primario || '#ff6a00';
+    colorHex.value    = data.color_primario || '#ff6a00';
+    document.getElementById('metodo_ventas').value  = data.metodo_ventas || 'whatsapp';
+    setDelivery(data.delivery_tipo || 'no_incluido');
+    document.getElementById('delivery_precio').value = data.delivery_precio || '0';
+
+    if (data.logo) document.getElementById('logo-preview').src = data.logo;
+    banners = Array.isArray(data.banners) ? data.banners : [];
+    renderBannersGrid();
+  } catch(e) { toast('Error al cargar datos de la tienda', true); }
+}
+cargarTienda();
+
+// ── Save ──────────────────────────────────────────────────────
+async function guardarTienda() {
+  const nombre = document.getElementById('nombre').value.trim();
+  if (!nombre) { toast('El nombre de la tienda es obligatorio', true); return; }
+
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+
+  const fd = new FormData();
+  fd.append('nombre',          nombre);
+  fd.append('descripcion',     document.getElementById('descripcion').value.trim());
+  fd.append('email',           document.getElementById('email').value.trim());
+  fd.append('telefono',        document.getElementById('telefono').value.trim());
+  fd.append('direccion',       document.getElementById('direccion').value.trim());
+  fd.append('whatsapp',        document.getElementById('whatsapp').value.trim());
+  fd.append('facebook',        document.getElementById('facebook').value.trim());
+  fd.append('instagram',       document.getElementById('instagram').value.trim());
+  fd.append('tiktok',          document.getElementById('tiktok').value.trim());
+  fd.append('color_primario',  colorPicker.value);
+  fd.append('metodo_ventas',   document.getElementById('metodo_ventas').value);
+  fd.append('delivery_tipo',   document.querySelector('input[name=delivery]:checked')?.value || 'no_incluido');
+  fd.append('delivery_precio', document.getElementById('delivery_precio').value || '0');
+
+  const logoInput = document.getElementById('logo-input');
+  if (logoInput.files[0]) fd.append('logo', logoInput.files[0]);
 
   try {
-    const res  = await fetch('/api/tienda?accion=guardar', { method: 'POST', body: fd });
+    const res  = await fetch('/api/tienda?accion=guardar', {method:'POST', body:fd});
     const data = await res.json();
     if (data.ok) {
-      msg.className = 'save-msg save-ok'; msg.textContent = '✅ Cambios guardados';
-      if (data.logo) showLogoPreview(data.logo);
-      logoFile = null;
+      if (data.logo) document.getElementById('logo-preview').src = data.logo;
+      toast('✅ Tienda guardada correctamente');
     } else {
-      msg.className = 'save-msg save-err'; msg.textContent = '❌ ' + (data.error || 'Error al guardar');
+      toast(data.error || 'Error al guardar', true);
     }
-  } catch(e) {
-    msg.className = 'save-msg save-err'; msg.textContent = '❌ Error de conexión';
-  } finally {
-    btn.disabled = false; btn.textContent = 'Guardar cambios';
-    setTimeout(() => { msg.textContent = ''; }, 4000);
-  }
-}
+  } catch { toast('Error de red al guardar', true); }
 
-function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('overlay').classList.toggle('show');
+  btn.disabled = false;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar cambios`;
 }
-function closeSidebar() {
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('overlay').classList.remove('show');
-}
-function logout() { fetch('/api/logout').then(() => location.href = '/login'); }
 </script>
 </body>
 </html>

@@ -1,265 +1,433 @@
-<?php session_start(); ?>
+<?php
+session_start();
+if (empty($_SESSION['uid']) || empty($_SESSION['slug'])) {
+    header('Location: /login');
+    exit;
+}
+$slug = $_SESSION['slug'];
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pedidos – Komercia</title>
+<title>Pedidos — Komercia</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;color:#333}
-.layout{display:flex;min-height:100vh}
-.sidebar{width:240px;background:#111;color:#fff;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:.3s}
-.sidebar-logo{padding:24px 20px;border-bottom:1px solid #222;font-size:22px;font-weight:800;color:#ff6a00}
-.sidebar nav a{display:flex;align-items:center;gap:12px;padding:13px 20px;color:#aaa;text-decoration:none;font-size:14px;transition:.2s}
-.sidebar nav a:hover,.sidebar nav a.active{color:#fff;background:#222}
-.sidebar nav a.active{border-left:3px solid #ff6a00}
-.sidebar nav a span.icon{font-size:18px;width:22px;text-align:center}
-.sidebar-footer{margin-top:auto;padding:16px 20px;border-top:1px solid #222}
-.sidebar-footer a{color:#aaa;text-decoration:none;font-size:13px}
-.main{margin-left:240px;flex:1;display:flex;flex-direction:column;transition:.3s}
-.topbar{background:#fff;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #eee;position:sticky;top:0;z-index:50}
-.topbar-left{display:flex;align-items:center;gap:12px}
-.hamburger{display:none;background:none;border:none;font-size:22px;cursor:pointer}
-.topbar h1{font-size:18px;font-weight:600}
-.topbar-right{display:flex;align-items:center;gap:12px}
-.btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:500;transition:.2s}
-.btn-outline{background:#fff;color:#333;border:1px solid #ddd}
-.btn-outline:hover{background:#f5f5f5}
-.btn-sm{font-size:12px;padding:5px 12px}
-.avatar{width:36px;height:36px;border-radius:50%;background:#ff6a00;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}
-.content{padding:24px}
-/* TABS */
-.tabs{display:flex;gap:0;border-bottom:2px solid #eee;margin-bottom:20px;overflow-x:auto}
-.tab-btn{padding:10px 18px;border:none;background:none;cursor:pointer;font-size:14px;font-weight:500;color:#888;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;font-family:inherit;transition:.2s}
-.tab-btn.active{color:#ff6a00;border-bottom-color:#ff6a00;font-weight:700}
-/* PEDIDOS */
-.pedidos-list{display:flex;flex-direction:column;gap:14px}
-.pedido-card{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.07);overflow:hidden}
-.pedido-header{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;border-bottom:1px solid #f5f5f5;cursor:pointer}
-.pedido-id{font-size:12px;color:#aaa;font-family:monospace}
-.pedido-cliente{font-weight:700;font-size:15px}
-.pedido-tel{font-size:13px;color:#888}
-.pedido-fecha{font-size:12px;color:#aaa}
-.pedido-total{font-weight:800;font-size:16px;color:#ff6a00}
-.estado-badge{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
-.estado-pendiente{background:#fff8e1;color:#f59e0b}
-.estado-confirmado{background:#f0fdf4;color:#16a34a}
-.estado-entregado{background:#eff6ff;color:#2563eb}
-.estado-cancelado{background:#fef2f2;color:#dc2626}
-.pedido-body{display:none;padding:16px 18px;border-top:1px solid #f5f5f5}
-.pedido-body.open{display:block}
-.pedido-items{font-size:13px;color:#555;margin-bottom:12px}
-.pedido-items table{width:100%;border-collapse:collapse}
-.pedido-items td{padding:5px 8px;border-bottom:1px solid #f5f5f5}
-.pedido-items td:last-child{text-align:right;font-weight:700}
-.pedido-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
-.form-inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.form-inline label{font-size:12px;color:#888;font-weight:600}
-.form-inline select,.form-inline input{padding:6px 10px;border:1px solid #ddd;border-radius:7px;font-size:13px;font-family:inherit;outline:none}
-.form-inline select:focus,.form-inline input:focus{border-color:#ff6a00}
-.btn-save-estado{background:#ff6a00;color:#fff;border:none;border-radius:7px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:.2s;font-family:inherit}
-.btn-save-estado:hover{background:#e55d00}
-.btn-save-estado:disabled{opacity:.6;cursor:not-allowed}
-.clave-wrap{display:none;flex-direction:column;gap:6px;padding:12px;background:#f9f9f9;border-radius:8px;margin-top:8px}
-.clave-wrap label{font-size:12px;color:#888;font-weight:600}
-.clave-wrap input{padding:8px 12px;border:1px solid #ddd;border-radius:7px;font-size:14px;font-family:monospace;letter-spacing:3px;width:140px;outline:none}
-.clave-wrap input:focus{border-color:#ff6a00}
-.loading{text-align:center;padding:60px;color:#aaa}
-.empty-state{text-align:center;padding:60px 20px;color:#aaa}
-.empty-state .icon{font-size:64px;margin-bottom:16px}
-.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:90}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:100vh;display:flex;overflow-x:hidden}
+
+/* ── Sidebar ─────────────────────────────────────── */
+.sidebar{width:220px;background:#fff;border-right:1px solid #e8eaf0;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;padding:24px 0;flex-shrink:0}
+.sidebar-logo{padding:0 20px 24px;border-bottom:1px solid #e8eaf0;margin-bottom:16px}
+.sidebar-logo span{font-size:22px;font-weight:700;background:linear-gradient(135deg,#ff6a00,#ee0979);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sidebar nav a{display:flex;align-items:center;gap:10px;padding:10px 20px;color:#555;text-decoration:none;font-size:14px;border-radius:8px;margin:2px 8px;transition:all .2s}
+.sidebar nav a:hover{background:#fff5f0;color:#ff6a00}
+.sidebar nav a.active{background:linear-gradient(135deg,#ff6a00,#ee0979);color:#fff;font-weight:600}
+.sidebar nav a svg{width:18px;height:18px;flex-shrink:0}
+
+/* ── Topbar ──────────────────────────────────────── */
+.topbar{position:fixed;top:0;left:220px;right:0;height:58px;background:#fff;border-bottom:1px solid #e8eaf0;display:flex;align-items:center;gap:14px;padding:0 24px;z-index:90}
+.topbar h1{font-size:16px;font-weight:700;color:#1a1a2e;margin-right:auto}
+
+/* ── Layout: table + detail ──────────────────────── */
+.main{margin-left:220px;padding-top:58px;flex:1;display:flex;height:100vh;overflow:hidden}
+.table-panel{flex:1;overflow:auto;padding:20px}
+.detail-panel{width:0;min-width:0;overflow:hidden;background:#fff;border-left:1px solid #e8eaf0;transition:width .3s,min-width .3s;position:relative;flex-shrink:0}
+.detail-panel.open{width:340px;min-width:340px;overflow-y:auto}
+
+/* ── Toolbar ─────────────────────────────────────── */
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.tab-btn{padding:7px 16px;border-radius:8px;border:1.5px solid #e0e0e0;background:#fff;font-size:13px;font-weight:600;cursor:pointer;color:#555;transition:all .2s}
+.tab-btn.active{background:linear-gradient(135deg,#ff6a00,#ee0979);color:#fff;border-color:transparent}
+.tab-btn:hover:not(.active){border-color:#ff6a00;color:#ff6a00}
+.search-input{flex:1;max-width:220px;padding:8px 14px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:13px;outline:none;transition:border-color .2s}
+.search-input:focus{border-color:#ff6a00}
+.btn-csv{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#f5f5f5;border:1.5px solid #e0e0e0;border-radius:8px;font-size:13px;font-weight:600;color:#444;cursor:pointer;transition:all .2s;margin-left:auto}
+.btn-csv:hover{border-color:#ff6a00;color:#ff6a00}
+.btn-csv svg{width:14px;height:14px}
+
+/* ── Table ───────────────────────────────────────── */
+.table-wrap{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+thead tr{background:#fafafa}
+th{padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #f0f0f0;white-space:nowrap;user-select:none;cursor:pointer}
+th:hover{color:#ff6a00}
+th .sort-arrow{margin-left:4px;opacity:.4}
+th.sorted .sort-arrow{opacity:1;color:#ff6a00}
+td{padding:11px 14px;border-bottom:1px solid #f5f5f5;color:#333;white-space:nowrap}
+tbody tr{cursor:pointer;transition:background .12s}
+tbody tr:hover td{background:#fff8f4}
+tbody tr.selected td{background:#fff0e8}
+tbody tr:last-child td{border-bottom:none}
+
+/* ── Status badge ────────────────────────────────── */
+.badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700}
+.badge.pendiente{background:#fff3e0;color:#f57c00}
+.badge.enviado{background:#e3f2fd;color:#1565c0}
+.badge.entregado{background:#e8f5e9;color:#2e7d32}
+.badge.cancelado{background:#fce4ec;color:#c62828}
+
+/* ── Detail panel ────────────────────────────────── */
+.detail-close{position:absolute;top:14px;right:14px;background:none;border:none;cursor:pointer;font-size:18px;color:#aaa;line-height:1}
+.detail-close:hover{color:#ee0979}
+.detail-inner{padding:22px}
+.detail-title{font-size:15px;font-weight:700;color:#1a1a2e;margin-bottom:4px}
+.detail-sub{font-size:12px;color:#aaa;margin-bottom:20px}
+.detail-row{display:flex;justify-content:space-between;align-items:flex-start;padding:9px 0;border-bottom:1px solid #f5f5f5;gap:12px}
+.detail-row:last-of-type{border-bottom:none}
+.detail-key{font-size:12px;color:#888;font-weight:600;flex-shrink:0}
+.detail-val{font-size:13px;color:#1a1a2e;text-align:right;word-break:break-word}
+.detail-items{margin-top:16px}
+.detail-items h4{font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px}
+.item-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f8f8f8;font-size:13px}
+.item-row:last-child{border-bottom:none}
+.item-name{color:#1a1a2e;flex:1}
+.item-qty{color:#888;font-size:12px;margin:0 10px}
+.item-price{font-weight:600;color:#ff6a00}
+
+/* ── Status change ───────────────────────────────── */
+.status-select-wrap{margin-top:20px}
+.status-select-wrap label{font-size:12px;font-weight:700;color:#aaa;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.status-select{width:100%;padding:9px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;font-family:inherit;outline:none;cursor:pointer;transition:border-color .2s}
+.status-select:focus{border-color:#ff6a00}
+.btn-update-status{width:100%;margin-top:10px;padding:10px;background:linear-gradient(135deg,#ff6a00,#ee0979);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:opacity .2s}
+.btn-update-status:hover{opacity:.88}
+.btn-update-status:disabled{opacity:.5;cursor:not-allowed}
+
+/* ── Empty / loading ─────────────────────────────── */
+.empty{text-align:center;padding:60px 20px;color:#bbb;font-size:14px}
+.skeleton-row td{color:transparent;background:linear-gradient(90deg,#f0f0f0 25%,#fafafa 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;border-radius:4px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ── Toast ───────────────────────────────────────── */
+#toast{position:fixed;bottom:24px;right:24px;background:#1a1a2e;color:#fff;padding:11px 20px;border-radius:12px;font-size:14px;font-weight:500;opacity:0;transform:translateY(10px);transition:all .3s;z-index:999;pointer-events:none}
+#toast.show{opacity:1;transform:translateY(0)}
+#toast.error{background:#ee0979}
+
 @media(max-width:768px){
-  .sidebar{transform:translateX(-240px)}
-  .sidebar.open{transform:translateX(0)}
-  .sidebar-overlay.show{display:block}
-  .main{margin-left:0}
-  .hamburger{display:block}
+  .sidebar{display:none}
+  .main,.topbar{margin-left:0;left:0}
+  .detail-panel.open{width:100%;position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;height:100vh;overflow-y:auto;min-width:unset}
 }
 </style>
 </head>
 <body>
-<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
-<div class="layout">
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-logo">⚡ Komercia</div>
-    <nav>
-      <a href="/panel"><span class="icon">📊</span> Dashboard</a>
-      <a href="/panel/productos"><span class="icon">📦</span> Productos</a>
-      <a href="/panel/pedidos" class="active"><span class="icon">🛒</span> Pedidos</a>
-      <a href="#"><span class="icon">🏪</span> Mi Tienda</a>
-      <a href="#"><span class="icon">💎</span> Mi Plan</a>
-      <a href="/panel/configuracion"><span class="icon">⚙️</span> Configuración</a>
-    </nav>
-    <div class="sidebar-footer">
-      <a href="#" onclick="logout()">🚪 Cerrar sesión</a>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo"><span>Komercia</span></div>
+  <nav>
+    <a href="/panel">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </a>
+    <a href="/panel/productos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 3H8a2 2 0 00-2 2v2h12V5a2 2 0 00-2-2z"/></svg>
+      Productos
+    </a>
+    <a href="/panel/pedidos" class="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      Pedidos
+    </a>
+    <a href="/panel/configuracion">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 003.41 3.48M3.41 3.48A10 10 0 004.93 19.07M4.93 19.07A10 10 0 0020.59 20.52M20.59 20.52A10 10 0 0019.07 4.93"/></svg>
+      Configuración
+    </a>
+  </nav>
+</aside>
+
+<!-- Topbar -->
+<div class="topbar">
+  <h1>🧾 Pedidos</h1>
+  <span id="topbar-count" style="font-size:13px;color:#aaa"></span>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <!-- Table panel -->
+  <div class="table-panel">
+    <div class="toolbar">
+      <button class="tab-btn active" data-estado="">Todos</button>
+      <button class="tab-btn" data-estado="pendiente">Pendientes</button>
+      <button class="tab-btn" data-estado="enviado">Enviados</button>
+      <button class="tab-btn" data-estado="entregado">Entregados</button>
+      <button class="tab-btn" data-estado="cancelado">Cancelados</button>
+      <input class="search-input" id="search-input" type="text" placeholder="🔍 Buscar cliente...">
+      <button class="btn-csv" onclick="exportarCSV()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar CSV
+      </button>
     </div>
-  </aside>
-  <div class="main">
-    <div class="topbar">
-      <div class="topbar-left">
-        <button class="hamburger" onclick="toggleSidebar()">☰</button>
-        <h1>🛒 Pedidos</h1>
-      </div>
-      <div class="topbar-right">
-        <a id="link-tienda" href="#" target="_blank" class="btn btn-outline btn-sm">🏪 Ver mi tienda</a>
-        <div class="avatar" id="avatar-inicial">?</div>
-      </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th onclick="sortBy('nombre')" id="th-nombre"># / Cliente <span class="sort-arrow">↕</span></th>
+            <th onclick="sortBy('telefono')" id="th-telefono">Teléfono <span class="sort-arrow">↕</span></th>
+            <th onclick="sortBy('total')" id="th-total">Total <span class="sort-arrow">↕</span></th>
+            <th onclick="sortBy('estado')" id="th-estado">Estado <span class="sort-arrow">↕</span></th>
+            <th onclick="sortBy('fecha')" id="th-fecha">Fecha <span class="sort-arrow">↕</span></th>
+          </tr>
+        </thead>
+        <tbody id="tabla-body">
+          <!-- skeleton rows -->
+          <tr class="skeleton-row"><td>████████</td><td>████████</td><td>███</td><td>████████</td><td>████████</td></tr>
+          <tr class="skeleton-row"><td>████████</td><td>████████</td><td>███</td><td>████████</td><td>████████</td></tr>
+          <tr class="skeleton-row"><td>████████</td><td>████████</td><td>███</td><td>████████</td><td>████████</td></tr>
+        </tbody>
+      </table>
     </div>
-    <div class="content">
-      <div class="tabs">
-        <button class="tab-btn active" onclick="filtrarEstado('')" data-e="">Todos</button>
-        <button class="tab-btn" onclick="filtrarEstado('pendiente')" data-e="pendiente">⏳ Pendientes</button>
-        <button class="tab-btn" onclick="filtrarEstado('confirmado')" data-e="confirmado">✅ Confirmados</button>
-        <button class="tab-btn" onclick="filtrarEstado('entregado')" data-e="entregado">📬 Entregados</button>
-        <button class="tab-btn" onclick="filtrarEstado('cancelado')" data-e="cancelado">❌ Cancelados</button>
-      </div>
-      <div id="pedidos-container" class="loading">Cargando pedidos...</div>
-    </div>
+  </div>
+
+  <!-- Detail panel -->
+  <div class="detail-panel" id="detail-panel">
+    <div class="detail-inner" id="detail-inner"></div>
   </div>
 </div>
 
+<div id="toast"></div>
+
 <script>
-let todosLosPedidos = [];
-let filtroEstado = '';
+const slug = '<?= htmlspecialchars($slug) ?>';
 
-fetch('/api/sesion')
-  .then(r => r.json())
-  .then(d => {
-    if (!d.ok) { location.href = '/login'; return; }
-    document.getElementById('avatar-inicial').textContent = d.nombre.charAt(0).toUpperCase();
-    document.getElementById('link-tienda').href = '/tienda/' + d.slug;
-    cargarPedidos();
+let allPedidos = [];
+let filteredPedidos = [];
+let selectedId = null;
+let filterEstado = '';
+let searchQ = '';
+let sortKey = 'fecha';
+let sortDir = -1; // -1 = desc, 1 = asc
+
+// ── Toast ─────────────────────────────────────────────────────
+function toast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show' + (isError ? ' error' : '');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.className = '', 3500);
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function formatFecha(iso) {
+  if (!iso) return '—';
+  try {
+    return new Date(iso).toLocaleDateString('es-PE', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  } catch { return iso.slice(0,10); }
+}
+const statusLabel = {pendiente:'Pendiente',enviado:'Enviado',entregado:'Entregado',cancelado:'Cancelado'};
+
+// ── Load ──────────────────────────────────────────────────────
+async function cargarPedidos() {
+  try {
+    const res  = await fetch('/api/pedidos?accion=listar');
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Error');
+    allPedidos = data.pedidos || [];
+    applyFilters();
+  } catch(e) {
+    document.getElementById('tabla-body').innerHTML = `<tr><td colspan="5"><div class="empty">Error al cargar pedidos: ${escHtml(e.message)}</div></td></tr>`;
+  }
+}
+
+// ── Filters + sort ────────────────────────────────────────────
+function applyFilters() {
+  let list = [...allPedidos];
+  if (filterEstado) list = list.filter(p => p.estado === filterEstado);
+  if (searchQ) {
+    const q = searchQ.toLowerCase();
+    list = list.filter(p =>
+      (p.nombre || '').toLowerCase().includes(q) ||
+      (p.telefono || '').toLowerCase().includes(q) ||
+      (p.email || '').toLowerCase().includes(q)
+    );
+  }
+  list.sort((a, b) => {
+    let av = a[sortKey] || '', bv = b[sortKey] || '';
+    if (sortKey === 'total') { av = parseFloat(av) || 0; bv = parseFloat(bv) || 0; }
+    if (av < bv) return -sortDir;
+    if (av > bv) return sortDir;
+    return 0;
   });
-
-function cargarPedidos() {
-  document.getElementById('pedidos-container').innerHTML = '<div class="loading">Cargando...</div>';
-  fetch('/api/pedidos?accion=listar')
-    .then(r => r.json())
-    .then(d => {
-      if (!d.ok) { mostrarError(); return; }
-      todosLosPedidos = d.pedidos;
-      renderPedidos();
-    })
-    .catch(mostrarError);
+  filteredPedidos = list;
+  renderTable();
 }
 
-function filtrarEstado(estado) {
-  filtroEstado = estado;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.e === estado));
-  renderPedidos();
+function sortBy(key) {
+  if (sortKey === key) sortDir *= -1;
+  else { sortKey = key; sortDir = -1; }
+  document.querySelectorAll('th').forEach(th => th.classList.remove('sorted'));
+  document.getElementById(`th-${key}`)?.classList.add('sorted');
+  applyFilters();
 }
 
-function renderPedidos() {
-  const lista = filtroEstado
-    ? todosLosPedidos.filter(p => p.estado === filtroEstado)
-    : todosLosPedidos;
-
-  const c = document.getElementById('pedidos-container');
-  if (!lista.length) {
-    c.innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>No hay pedidos aquí todavía.</p></div>`;
+// ── Render table ──────────────────────────────────────────────
+function renderTable() {
+  document.getElementById('topbar-count').textContent = filteredPedidos.length + ' pedidos';
+  const tbody = document.getElementById('tabla-body');
+  if (!filteredPedidos.length) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty">No hay pedidos que coincidan</div></td></tr>`;
     return;
   }
-
-  c.innerHTML = '<div class="pedidos-list">' + lista.map(p => {
-    const fecha = p.creado_en ? new Date(p.creado_en).toLocaleString('es-PE', {dateStyle:'short',timeStyle:'short'}) : '';
-    const itemsHtml = (p.items||[]).map(it =>
-      `<tr><td>${esc(it.nombre)}</td><td style="color:#888">x${it.qty}</td><td>S/. ${fmt(it.precio * it.qty)}</td></tr>`
-    ).join('');
-
-    return `<div class="pedido-card" id="card-${p.id}">
-      <div class="pedido-header" onclick="toggleBody('${p.id}')">
-        <div>
-          <div class="pedido-cliente">${esc(p.nombre)}</div>
-          <div class="pedido-tel">📞 ${esc(p.telefono)}</div>
-          <div class="pedido-id">#${p.id}</div>
-        </div>
-        <div style="text-align:right">
-          <div class="pedido-total">S/. ${fmt(p.total)}</div>
-          <span class="estado-badge estado-${p.estado}">${estadoLabel(p.estado)}</span>
-          <div class="pedido-fecha">${fecha}</div>
-        </div>
-      </div>
-      <div class="pedido-body" id="body-${p.id}">
-        <div class="pedido-items">
-          <table>${itemsHtml}</table>
-          ${p.direccion ? `<p style="margin-top:8px;font-size:13px;color:#666">📍 ${esc(p.direccion)}</p>` : ''}
-          ${p.notas ? `<p style="margin-top:4px;font-size:13px;color:#888">📝 ${esc(p.notas)}</p>` : ''}
-        </div>
-        <div class="pedido-actions">
-          <div class="form-inline">
-            <label>Estado</label>
-            <select id="sel-${p.id}" onchange="onSelectEstado('${p.id}')">
-              <option value="pendiente"  ${p.estado==='pendiente' ?'selected':''}>⏳ Pendiente</option>
-              <option value="confirmado" ${p.estado==='confirmado'?'selected':''}>✅ Confirmado</option>
-              <option value="entregado"  ${p.estado==='entregado' ?'selected':''}>📬 Entregado</option>
-              <option value="cancelado"  ${p.estado==='cancelado' ?'selected':''}>❌ Cancelado</option>
-            </select>
-            <button class="btn-save-estado" onclick="guardarEstado('${p.id}')">Guardar</button>
-          </div>
-        </div>
-        <div class="clave-wrap" id="clave-wrap-${p.id}" ${p.estado==='confirmado'?'style="display:flex"':''}>
-          <label>🔑 Clave de pago (Shalom / 4 dígitos)</label>
-          <input type="text" id="clave-${p.id}" maxlength="10" placeholder="0000" value="${esc(p.clave||'')}">
-        </div>
-      </div>
-    </div>`;
-  }).join('') + '</div>';
+  tbody.innerHTML = filteredPedidos.map((p, i) => `
+    <tr onclick="seleccionarPedido('${escHtml(p.id)}')" ${p.id === selectedId ? 'class="selected"' : ''}>
+      <td style="color:#aaa;font-size:12px">${i + 1}. &nbsp;<strong style="color:#1a1a2e">${escHtml(p.nombre || '—')}</strong></td>
+      <td>${escHtml(p.telefono || '—')}</td>
+      <td style="font-weight:700;color:#ff6a00">S/ ${parseFloat(p.total || 0).toFixed(2)}</td>
+      <td><span class="badge ${p.estado || 'pendiente'}">${statusLabel[p.estado] || p.estado || 'Pendiente'}</span></td>
+      <td style="color:#aaa;font-size:12px">${formatFecha(p.fecha)}</td>
+    </tr>
+  `).join('');
 }
 
-function estadoLabel(e) {
-  const map = {pendiente:'⏳ Pendiente',confirmado:'✅ Confirmado',entregado:'📬 Entregado',cancelado:'❌ Cancelado'};
-  return map[e] || e;
+// ── Detail panel ──────────────────────────────────────────────
+function seleccionarPedido(id) {
+  selectedId = id;
+  const p = allPedidos.find(x => x.id === id);
+  if (!p) return;
+
+  renderTable(); // update selected highlight
+
+  const panel  = document.getElementById('detail-panel');
+  const inner  = document.getElementById('detail-inner');
+  panel.classList.add('open');
+
+  // Items list
+  const items = Array.isArray(p.items) ? p.items : [];
+  const itemsHtml = items.length ? `
+    <div class="detail-items">
+      <h4>Productos</h4>
+      ${items.map(it => `
+        <div class="item-row">
+          <span class="item-name">${escHtml(it.nombre || it.name || '—')}</span>
+          <span class="item-qty">×${it.cantidad || it.qty || 1}</span>
+          <span class="item-price">S/ ${parseFloat(it.precio || it.price || 0).toFixed(2)}</span>
+        </div>
+      `).join('')}
+    </div>
+  ` : '';
+
+  // Notas
+  const notasHtml = p.notas ? `<div class="detail-row"><div class="detail-key">Notas</div><div class="detail-val">${escHtml(p.notas)}</div></div>` : '';
+  // Dirección
+  const dirHtml = p.direccion ? `<div class="detail-row"><div class="detail-key">Dirección</div><div class="detail-val">${escHtml(p.direccion)}</div></div>` : '';
+  // Email
+  const emailHtml = p.email ? `<div class="detail-row"><div class="detail-key">Email</div><div class="detail-val">${escHtml(p.email)}</div></div>` : '';
+
+  inner.innerHTML = `
+    <button class="detail-close" onclick="cerrarDetalle()">✕</button>
+    <div class="detail-title">${escHtml(p.nombre || 'Pedido')}</div>
+    <div class="detail-sub">ID: ${escHtml(p.id)}</div>
+
+    <div class="detail-row"><div class="detail-key">Teléfono</div><div class="detail-val"><a href="https://wa.me/${escHtml((p.telefono||'').replace(/\D/g,''))}" target="_blank" style="color:#25D366;text-decoration:none">📱 ${escHtml(p.telefono || '—')}</a></div></div>
+    ${emailHtml}
+    ${dirHtml}
+    <div class="detail-row"><div class="detail-key">Total</div><div class="detail-val" style="font-weight:700;color:#ff6a00;font-size:16px">S/ ${parseFloat(p.total || 0).toFixed(2)}</div></div>
+    <div class="detail-row"><div class="detail-key">Estado actual</div><div class="detail-val"><span class="badge ${p.estado || 'pendiente'}">${statusLabel[p.estado] || 'Pendiente'}</span></div></div>
+    <div class="detail-row"><div class="detail-key">Fecha</div><div class="detail-val">${formatFecha(p.fecha)}</div></div>
+    <div class="detail-row"><div class="detail-key">Método de pago</div><div class="detail-val">${escHtml(p.metodo_pago || '—')}</div></div>
+    ${notasHtml}
+    ${itemsHtml}
+
+    <div class="status-select-wrap">
+      <label>Cambiar estado</label>
+      <select class="status-select" id="nuevo-estado">
+        <option value="pendiente" ${p.estado==='pendiente'?'selected':''}>⏳ Pendiente</option>
+        <option value="enviado" ${p.estado==='enviado'?'selected':''}>🚚 Enviado</option>
+        <option value="entregado" ${p.estado==='entregado'?'selected':''}>✅ Entregado</option>
+        <option value="cancelado" ${p.estado==='cancelado'?'selected':''}>❌ Cancelado</option>
+      </select>
+      <button class="btn-update-status" onclick="actualizarEstado('${escHtml(p.id)}')">Actualizar estado</button>
+    </div>
+  `;
 }
 
-function toggleBody(id) {
-  const b = document.getElementById('body-' + id);
-  b.classList.toggle('open');
+function cerrarDetalle() {
+  selectedId = null;
+  document.getElementById('detail-panel').classList.remove('open');
+  renderTable();
 }
 
-function onSelectEstado(id) {
-  const sel = document.getElementById('sel-' + id);
-  const cw  = document.getElementById('clave-wrap-' + id);
-  cw.style.display = sel.value === 'confirmado' ? 'flex' : 'none';
-}
+// ── Update status ─────────────────────────────────────────────
+async function actualizarEstado(pedidoId) {
+  const nuevo = document.getElementById('nuevo-estado').value;
+  const btn   = document.querySelector('.btn-update-status');
+  btn.disabled = true;
+  btn.textContent = 'Actualizando...';
 
-async function guardarEstado(id) {
-  const sel   = document.getElementById('sel-' + id);
-  const clave = document.getElementById('clave-' + id)?.value.trim() || '';
-  const fd    = new FormData();
-  fd.append('id', id);
-  fd.append('estado', sel.value);
-  if (sel.value === 'confirmado') fd.append('clave', clave);
-
-  const btn = document.querySelector(`#card-${id} .btn-save-estado`);
-  if (btn) { btn.disabled = true; btn.textContent = '...'; }
-
+  const fd = new FormData();
+  fd.append('pedido_id', pedidoId);
+  fd.append('estado', nuevo);
   try {
-    const res  = await fetch('/api/pedidos?accion=actualizar', { method: 'POST', body: fd });
+    const res  = await fetch('/api/pedidos?accion=actualizar', {method:'POST', body:fd});
     const data = await res.json();
     if (data.ok) {
-      // Actualizar badge local
-      const p = todosLosPedidos.find(x => x.id === id);
-      if (p) { p.estado = sel.value; if (sel.value === 'confirmado') p.clave = clave; }
-      // Actualizar badge en el header
-      const badge = document.querySelector(`#card-${id} .estado-badge`);
-      if (badge) { badge.textContent = estadoLabel(sel.value); badge.className = 'estado-badge estado-' + sel.value; }
-    } else alert('Error: ' + data.error);
-  } catch(e) { alert('Error de red'); }
-  finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
-  }
+      // Update locally
+      const p = allPedidos.find(x => x.id === pedidoId);
+      if (p) p.estado = nuevo;
+      applyFilters();
+      seleccionarPedido(pedidoId);
+      toast('✅ Estado actualizado');
+    } else {
+      toast(data.error || 'Error al actualizar', true);
+    }
+  } catch { toast('Error de red', true); }
+  btn.disabled = false;
+  btn.textContent = 'Actualizar estado';
 }
 
-function mostrarError() {
-  document.getElementById('pedidos-container').innerHTML = '<div class="empty-state"><p>Error cargando pedidos.</p></div>';
+// ── Export CSV ────────────────────────────────────────────────
+function exportarCSV() {
+  if (!filteredPedidos.length) { toast('No hay pedidos para exportar', true); return; }
+  const cols = ['ID','Cliente','Teléfono','Email','Total','Estado','Fecha','Dirección','Notas'];
+  const rows = filteredPedidos.map(p => [
+    p.id || '',
+    p.nombre || '',
+    p.telefono || '',
+    p.email || '',
+    parseFloat(p.total || 0).toFixed(2),
+    p.estado || '',
+    (p.fecha || '').slice(0,19).replace('T',' '),
+    p.direccion || '',
+    (p.notas || '').replace(/\n/g,' '),
+  ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
+
+  const csv  = [cols.join(','), ...rows].join('\r\n');
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `pedidos_${slug}_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('✅ CSV exportado');
 }
 
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function fmt(n) { return parseFloat(n||0).toFixed(2); }
-function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('show'); }
-function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
-function logout() { fetch('/api/logout').then(() => location.href = '/login'); }
+// ── Tab filter ────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filterEstado = btn.dataset.estado;
+    cerrarDetalle();
+    applyFilters();
+  });
+});
+
+// ── Search ────────────────────────────────────────────────────
+document.getElementById('search-input').addEventListener('input', e => {
+  searchQ = e.target.value.trim();
+  applyFilters();
+});
+
+// ── Init ──────────────────────────────────────────────────────
+cargarPedidos();
+// Sorted by fecha desc by default
+document.getElementById('th-fecha')?.classList.add('sorted');
 </script>
 </body>
 </html>

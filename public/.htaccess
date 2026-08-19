@@ -1,5 +1,6 @@
 Options -Indexes
 RewriteEngine On
+    RewriteRule ^tienda/([a-z0-9-]+)/producto/([a-z0-9_]+)$ producto.php?slug=$1&id=$2 [L,QSA]
 
 RewriteRule ^registro$            registro.php         [L]
 RewriteRule ^login$               login.php            [L]
@@ -9,6 +10,7 @@ RewriteRule ^panel/productos$     panel/productos.php  [L]
 RewriteRule ^tienda/([a-z0-9-]+)$ tienda.php?slug=$1  [L,QSA]
 RewriteRule ^panel/configuracion$ panel/configuracion.php [L]
 RewriteRule ^panel/pedidos$  panel/pedidos.php  [L]
+RewriteRule ^tienda/([a-z0-9-]+)/producto/([a-zA-Z0-9_]+)$ producto.php?slug=$1&id=$2 [L,QSA]
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
