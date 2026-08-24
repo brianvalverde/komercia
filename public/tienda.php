@@ -292,6 +292,13 @@ body{font-family:'Inter',sans-serif;background:#f7f7f7;color:#111;min-height:100
 .cart-total{display:flex;justify-content:space-between;font-weight:700;font-size:1rem;margin-bottom:12px}
 .btn-checkout{width:100%;padding:13px;background:var(--c);color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;transition:.2s;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px}
 .btn-checkout:hover{background:var(--cd)}
+/* Tres opciones de checkout */
+.checkout-opts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.co-btn{border:none;border-radius:10px;padding:11px 6px;font-size:.78rem;font-weight:700;cursor:pointer;transition:.2s;font-family:'Inter',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;position:relative}
+.co-wsp{background:#25d366;color:#fff}.co-wsp:hover{background:#1db954}
+.co-form{background:var(--c);color:#fff}.co-form:hover{background:var(--cd)}
+.co-pay{background:#f0f0f0;color:#aaa;cursor:not-allowed}
+.co-soon{font-size:.65rem;font-weight:600;background:#ff6a00;color:#fff;border-radius:8px;padding:1px 6px;position:absolute;top:-7px;right:-4px}
 
 /* ── ORDER FORM MODAL ── */
 .form-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1200;align-items:center;justify-content:center;padding:16px}
@@ -512,13 +519,21 @@ body{font-family:'Inter',sans-serif;background:#f7f7f7;color:#111;min-height:100
   <div class="cart-items" id="cart-items"></div>
   <div class="cart-footer" id="cart-footer" style="display:none">
     <div class="cart-total"><span>Total</span><span id="cart-total-price">S/. 0.00</span></div>
-    <button class="btn-checkout" onclick="checkout()">
-      <?php if ($metodoVentas === 'whatsapp'): ?>
-        💬 Pedir por WhatsApp
-      <?php else: ?>
-        📋 Completar pedido
+    <div class="checkout-opts">
+      <?php if ($whatsapp): ?>
+      <button class="co-btn co-wsp" onclick="enviarWhatsApp()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.999 0C5.373 0 0 5.373 0 12c0 2.127.557 4.126 1.533 5.862L.054 23.447a.5.5 0 0 0 .499.553.502.502 0 0 0 .132-.018l5.801-1.57A11.939 11.939 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
+        WhatsApp
+      </button>
       <?php endif; ?>
-    </button>
+      <button class="co-btn co-form" onclick="abrirFormModal()">
+        📋 Mi pedido
+      </button>
+      <button class="co-btn co-pay" disabled title="Próximamente">
+        💳 Pagar
+        <span class="co-soon">pronto</span>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -874,6 +889,11 @@ function enviarWhatsApp() {
   window.open('https://wa.me/' + tienda.telefono + '?text=' + encodeURIComponent(msg), '_blank');
 }
 
+function abrirFormModal() {
+  if (!cart.length) return;
+  cerrarCarrito();
+  document.getElementById('form-modal').classList.add('open');
+}
 function cerrarFormModal() {
   document.getElementById('form-modal').classList.remove('open');
 }

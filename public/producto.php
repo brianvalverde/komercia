@@ -197,17 +197,17 @@ a{text-decoration:none;color:inherit}
 .breadcrumb span{color:var(--primary)}
 
 /* ── MAIN LAYOUT ── */
-.container{max-width:1140px;margin:0 auto;padding:20px 24px}
+.container{max-width:1340px;margin:0 auto;padding:20px 32px}
 
 /* ── PRODUCT DETAIL ── */
-.prod-detail{display:grid;grid-template-columns:80px 1fr 420px;gap:24px;background:#fff;border-radius:16px;padding:28px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:32px}
+.prod-detail{display:grid;grid-template-columns:88px 1fr 480px;gap:28px;background:#fff;border-radius:20px;padding:32px;box-shadow:0 2px 12px rgba(0,0,0,.07);margin-bottom:32px}
 .gallery-thumbs{display:flex;flex-direction:column;gap:10px}
-.thumb{width:72px;height:72px;border-radius:10px;object-fit:cover;border:2px solid transparent;cursor:pointer;transition:.2s}
-.thumb:hover,.thumb.active{border-color:var(--primary)}
-.video-thumb{width:72px;height:72px;border-radius:10px;background:#111;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid transparent;font-size:22px;color:#fff;transition:.2s}
+.thumb{width:80px;height:80px;border-radius:10px;object-fit:contain;border:2px solid transparent;cursor:pointer;transition:.2s;background:#f8f8f8}
+.thumb:hover,.thumb.active{border-color:var(--primary);box-shadow:0 0 0 2px rgba(255,106,0,.15)}
+.video-thumb{width:80px;height:80px;border-radius:10px;background:#111;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid transparent;font-size:22px;color:#fff;transition:.2s}
 .video-thumb:hover,.video-thumb.active{border-color:var(--primary)}
-.gallery-main{position:relative}
-.zoom-lens{position:absolute;width:110px;height:110px;border:2px solid #ff6a00;border-radius:6px;pointer-events:none;display:none;z-index:10;box-sizing:border-box}.zoom-result{display:none;position:absolute;left:calc(100% + 12px);top:0;width:360px;height:360px;border:1px solid #e0e0e0;border-radius:14px;overflow:hidden;background:#fff;z-index:20;box-shadow:0 8px 32px rgba(0,0,0,.14)}@media(max-width:900px){.zoom-result{display:none!important}}.main-img{width:100%;aspect-ratio:1;object-fit:contain;background:#fff;border-radius:14px;display:block}
+.gallery-main{position:relative;background:#f8f8f8;border-radius:16px;overflow:hidden}
+.main-img{width:100%;aspect-ratio:1;object-fit:contain;border-radius:14px;display:block;background:#f8f8f8}
 .main-video{width:100%;aspect-ratio:1;border-radius:14px;display:none;background:#000}
 .gallery-arrows{position:absolute;top:50%;transform:translateY(-50%);width:100%;display:flex;justify-content:space-between;pointer-events:none;padding:0 10px}
 .gallery-arrow{width:36px;height:36px;background:rgba(255,255,255,.85);border:none;border-radius:50%;cursor:pointer;font-size:18px;pointer-events:all;transition:.2s;display:flex;align-items:center;justify-content:center}
@@ -246,12 +246,14 @@ a{text-decoration:none;color:inherit}
 .qty-val{width:44px;text-align:center;font-weight:700;font-size:15px;border:none;outline:none}
 
 /* CTA */
-.cta-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
-.btn-add{flex:1;min-width:160px;background:var(--primary);color:#fff;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;transition:.2s}
+.cta-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.btn-add{flex:1;min-width:100px;background:var(--primary);color:#fff;border:none;border-radius:10px;padding:12px 10px;font-size:14px;font-weight:700;cursor:pointer;transition:.2s}
 .btn-add:hover{filter:brightness(1.1)}
-.btn-wsp{flex:1;min-width:160px;background:#25d366;color:#fff;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:.2s}
+.btn-wsp{flex:1;min-width:100px;background:#25d366;color:#fff;border:none;border-radius:10px;padding:12px 10px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:.2s}
 .btn-wsp:hover{background:#1db954}
-.btn-wsp svg{width:20px;height:20px;fill:currentColor}
+.btn-wsp svg{width:18px;height:18px;fill:currentColor}
+.btn-pay-soon{flex:1;min-width:100px;background:#f0f0f0;color:#aaa;border:none;border-radius:10px;padding:12px 10px;font-size:14px;font-weight:700;cursor:not-allowed;position:relative;display:flex;align-items:center;justify-content:center;gap:4px}
+.pay-soon-badge{font-size:10px;font-weight:700;background:#ff6a00;color:#fff;border-radius:8px;padding:1px 5px;position:absolute;top:-7px;right:-2px}
 
 /* Descripción */
 .prod-desc-title{font-size:14px;font-weight:700;color:#555;margin-bottom:6px;margin-top:4px}
@@ -281,10 +283,11 @@ a{text-decoration:none;color:inherit}
 .form-row.single{grid-template-columns:1fr}
 .form-control{padding:10px 14px;border:1px solid #ddd;border-radius:8px;font-size:14px;font-family:inherit;width:100%;outline:none;transition:.2s}
 .form-control:focus{border-color:var(--primary)}
-.star-input{display:flex;gap:4px;margin-bottom:12px}
-.star-input label{font-size:28px;cursor:pointer;color:#ddd;transition:.2s}
-.star-input input{display:none}
-.star-input label:hover,.star-input label.on{color:#f59e0b}
+.star-picker{display:flex;gap:6px;margin-bottom:12px}
+.star-picker .sp-star{font-size:30px;cursor:pointer;color:#ddd;transition:color .15s,transform .1s;user-select:none;line-height:1}
+.star-picker .sp-star:hover,.star-picker .sp-star.lit{color:#f59e0b}
+.star-picker .sp-star:active{transform:scale(.85)}
+.star-picker-label{font-size:12px;color:#aaa;margin-bottom:8px;display:block}
 .btn-submit-resena{background:var(--primary);color:#fff;border:none;border-radius:8px;padding:11px 24px;font-size:14px;font-weight:700;cursor:pointer;transition:.2s}
 .btn-submit-resena:hover{filter:brightness(1.1)}
 .btn-submit-resena:disabled{opacity:.6;cursor:not-allowed}
@@ -426,7 +429,7 @@ a{text-decoration:none;color:inherit}
     <!-- Imagen principal -->
     <div class="gallery-main">
       <img id="main-img" src="<?= htmlspecialchars($pImagenPrinc) ?>" class="main-img" alt="<?= htmlspecialchars($pNombre) ?>">
-      <div class="zoom-lens" id="zoom-lens"></div><div class="zoom-result" id="zoom-result"><img id="zoom-img" style="position:absolute;pointer-events:none;max-width:none" alt=""></div><video id="main-video" class="main-video" controls></video>
+      <video id="main-video" class="main-video" controls></video>
       <?php if (count($pImagenes) + count($pVideos) > 1): ?>
       <div class="gallery-arrows">
         <button class="gallery-arrow" onclick="navMedia(-1)">‹</button>
@@ -494,16 +497,16 @@ a{text-decoration:none;color:inherit}
           <button class="qty-btn" onclick="changeQty(1)">+</button>
         </div>
       </div>
+      <button class="btn-add" onclick="addToCart()" style="width:100%;margin-bottom:10px">🛒 Agregar al carrito</button>
       <div class="cta-row">
-        <?php if ($metodoVentas === 'formulario'): ?>
-          <button class="btn-add" onclick="addToCart()">🛒 Agregar al carrito</button>
-          <button class="btn-wsp" onclick="openCartDrawerWsp()">
-            <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.999 0C5.373 0 0 5.373 0 12c0 2.127.557 4.126 1.533 5.862L.054 23.447a.5.5 0 0 0 .499.553.502.502 0 0 0 .132-.018l5.801-1.57A11.939 11.939 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
-            Comprar por WhatsApp
-          </button>
-        <?php else: ?>
-          <button class="btn-add" onclick="addToCart()">🛒 Agregar al carrito</button>
+        <?php if ($whatsapp): ?>
+        <button class="btn-wsp" onclick="openCartDrawerWsp()">
+          <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.999 0C5.373 0 0 5.373 0 12c0 2.127.557 4.126 1.533 5.862L.054 23.447a.5.5 0 0 0 .499.553.502.502 0 0 0 .132-.018l5.801-1.57A11.939 11.939 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
+          WhatsApp
+        </button>
         <?php endif; ?>
+        <button class="btn-add" onclick="openDrawer()" style="background:#555">📋 Mi pedido</button>
+        <button class="btn-pay-soon" disabled title="Próximamente">💳 Pagar<span class="pay-soon-badge">pronto</span></button>
       </div>
       <?php else: ?>
       <div class="out-stock" style="font-size:15px;padding:10px 16px">Sin stock disponible</div>
@@ -550,12 +553,15 @@ a{text-decoration:none;color:inherit}
     <!-- Formulario nueva reseña -->
     <div class="form-resena">
       <h4>Deja tu reseña</h4>
-      <div class="star-input" id="star-input">
-        <?php for($s=5;$s>=1;$s--): ?>
-        <input type="radio" name="estrellas" id="s<?=$s?>" value="<?=$s?>">
-        <label for="s<?=$s?>" title="<?=$s?> estrellas">★</label>
-        <?php endfor; ?>
+      <span class="star-picker-label">Puntuación *</span>
+      <div class="star-picker" id="star-picker">
+        <span class="sp-star" data-v="1">★</span>
+        <span class="sp-star" data-v="2">★</span>
+        <span class="sp-star" data-v="3">★</span>
+        <span class="sp-star" data-v="4">★</span>
+        <span class="sp-star" data-v="5">★</span>
       </div>
+      <input type="hidden" id="star-val" value="0">
       <div class="form-row">
         <input class="form-control" id="res-nombre" placeholder="Tu nombre *" required>
         <input class="form-control" id="res-pais" placeholder="País (opcional)">
@@ -831,38 +837,27 @@ async function confirmarPedido() {
   btn.disabled = false; btn.textContent = 'Confirmar pedido';
 }
 
-// ── RESEÑAS ──────────────────────────────────────────────────
-// Star input CSS hack
-const starLabels = document.querySelectorAll('#star-input label');
-function updateStars() {
-  const checked = document.querySelector('#star-input input:checked');
-  const val = checked ? parseInt(checked.value) : 0;
-  starLabels.forEach(l => {
-    const v = parseInt(l.getAttribute('for').replace('s',''));
-    l.classList.toggle('on', v >= val); // reversed because CSS displays RTL
-  });
-  // Actually just use direct coloring
-  document.querySelectorAll('#star-input input').forEach(inp => {
-    inp.addEventListener('change', () => {
-      const v = parseInt(inp.value);
-      starLabels.forEach(l => {
-        const lv = parseInt(l.getAttribute('for').replace('s',''));
-        l.style.color = lv <= v ? '#f59e0b' : '#ddd';
-      });
+// ── RESEÑAS — Star picker ────────────────────────────────────
+(function(){
+  const stars = document.querySelectorAll('#star-picker .sp-star');
+  const inp   = document.getElementById('star-val');
+  function paint(n){
+    stars.forEach(s => s.classList.toggle('lit', parseInt(s.dataset.v) <= n));
+  }
+  stars.forEach(s => {
+    s.addEventListener('mouseenter', () => paint(parseInt(s.dataset.v)));
+    s.addEventListener('mouseleave', () => paint(parseInt(inp.value)));
+    s.addEventListener('click', () => {
+      inp.value = s.dataset.v;
+      paint(parseInt(s.dataset.v));
     });
   });
-}
-// init star colors on page load
-document.addEventListener('DOMContentLoaded', () => {
-  // Default all gray
-  starLabels.forEach(l => l.style.color = '#ddd');
-});
+})();
 
 async function enviarResena() {
   const nombre     = document.getElementById('res-nombre').value.trim();
   const comentario = document.getElementById('res-comentario').value.trim();
-  const checked    = document.querySelector('#star-input input:checked');
-  const estrellas  = checked ? parseInt(checked.value) : 0;
+  const estrellas  = parseInt(document.getElementById('star-val').value) || 0;
   if (!nombre || !comentario) return showToast('Nombre y comentario son requeridos');
   if (!estrellas) return showToast('Selecciona una puntuación');
   const btn = document.getElementById('btn-resena');
@@ -882,8 +877,8 @@ async function enviarResena() {
       document.getElementById('res-nombre').value = '';
       document.getElementById('res-pais').value = '';
       document.getElementById('res-comentario').value = '';
-      document.querySelectorAll('#star-input input').forEach(i=>i.checked=false);
-      starLabels.forEach(l=>l.style.color='#ddd');
+      document.getElementById('star-val').value = '0';
+      document.querySelectorAll('#star-picker .sp-star').forEach(s=>s.classList.remove('lit'));
     } else showToast('Error: ' + d.error);
   } catch(e) { showToast('Error de red'); }
   btn.disabled = false; btn.textContent = 'Enviar reseña';
@@ -904,6 +899,6 @@ window.addEventListener('scroll', () => {
 
 // Init cart
 updateCartUI();
-;(function(){var wrap=document.querySelector(".gallery-main"),lens=document.getElementById("zoom-lens"),result=document.getElementById("zoom-result"),zi=document.getElementById("zoom-img"),on=false;function init(){var img=document.getElementById("main-img");if(!img||img.style.display==="none")return;zi.src=img.src;}wrap.addEventListener("mouseenter",function(){var img=document.getElementById("main-img");if(!img||img.style.display==="none")return;init();on=true;lens.style.display="block";result.style.display="block";});wrap.addEventListener("mouseleave",function(){on=false;lens.style.display="none";result.style.display="none";});wrap.addEventListener("mousemove",function(e){if(!on)return;var img=document.getElementById("main-img");if(!img||img.style.display==="none")return;var b=img.getBoundingClientRect(),rx=result.offsetWidth/lens.offsetWidth,ry=result.offsetHeight/lens.offsetHeight,lx=Math.max(0,Math.min(e.clientX-b.left-lens.offsetWidth/2,b.width-lens.offsetWidth)),ly=Math.max(0,Math.min(e.clientY-b.top-lens.offsetHeight/2,b.height-lens.offsetHeight));lens.style.left=lx+"px";lens.style.top=ly+"px";zi.style.left=-(lx*rx)+"px";zi.style.top=-(ly*ry)+"px";zi.style.width=(b.width*rx)+"px";zi.style.height=(b.height*ry)+"px";});var orig=window.showMedia;if(orig)window.showMedia=function(t,s){orig(t,s);if(t!=="vid")setTimeout(init,60);else{lens.style.display="none";result.style.display="none";on=false;}};})();</script>
+</script>
 </body>
 </html>

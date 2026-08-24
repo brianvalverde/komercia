@@ -422,7 +422,7 @@ document.getElementById('video-file-input').addEventListener('change', function(
   const total = videosExistentes.length + videosNuevos.length;
   const slots = 2 - total;
   for (const f of files.slice(0, slots)) {
-    if (f.size > 50 * 1024 * 1024) { alert('El video ' + f.name + ' supera 50 MB'); continue; }
+    if (f.size > 50 * 1024 * 1024) { showToast('El video ' + f.name + ' supera 50 MB','warn'); continue; }
     videosNuevos.push(f);
   }
   renderVideosList();
@@ -527,14 +527,14 @@ document.getElementById('form-producto').addEventListener('submit', function(e) 
       btn.disabled = false; btn.textContent = 'Guardar Producto';
       try {
         const data = JSON.parse(xhr.responseText);
-        if (data.ok) { cerrarModal(); cargarProductos(); }
-        else alert('Error: ' + data.error);
-      } catch(err) { alert('Error al procesar respuesta'); }
+        if (data.ok) { cerrarModal(); cargarProductos(); showToast('Producto guardado','ok'); }
+        else showToast('Error: ' + data.error,'err');
+      } catch(err) { showToast('Error al procesar respuesta','err'); }
     };
     xhr.onerror = function() {
       prog.style.display = 'none';
       btn.disabled = false; btn.textContent = 'Guardar Producto';
-      alert('Error de red al subir el video');
+      showToast('Error de red al subir el video','err');
     };
     xhr.open('POST', '/api/productos?accion=' + accion);
     xhr.send(fd);
@@ -543,10 +543,10 @@ document.getElementById('form-producto').addEventListener('submit', function(e) 
       .then(r => r.json())
       .then(data => {
         btn.disabled = false; btn.textContent = 'Guardar Producto';
-        if (data.ok) { cerrarModal(); cargarProductos(); }
-        else alert('Error: ' + data.error);
+        if (data.ok) { cerrarModal(); cargarProductos(); showToast('Producto guardado','ok'); }
+        else showToast('Error: ' + data.error,'err');
       })
-      .catch(() => { btn.disabled = false; btn.textContent = 'Guardar Producto'; alert('Error de red.'); });
+      .catch(() => { btn.disabled = false; btn.textContent = 'Guardar Producto'; showToast('Error de red.','err'); });
   }
 });
 
@@ -558,13 +558,23 @@ async function toggleActivo(id, activo) {
 }
 
 // ── ELIMINAR ──────────────────────────────────────────────────
-async function eliminarProducto(id, btn) {
-  if (!confirm('¿Eliminar este producto?')) return;
-  btn.disabled = true; btn.textContent = '...';
-  const res  = await fetch('/api/productos?accion=eliminar&id=' + id, { method: 'DELETE' });
-  const data = await res.json();
-  if (data.ok) cargarProductos();
-  else { alert('Error al eliminar.'); btn.disabled = false; btn.textContent = '🗑 Eliminar'; }
+function eliminarProducto(id, btn) {
+  // Primer click: pedir confirmación visual en el propio botón
+  if (btn.dataset.confirm !== '1') {
+    btn.dataset.confirm = '1';
+    btn.textContent = '¿Confirmar?';
+    btn.style.background = '#e74c3c';
+    setTimeout(() => { btn.dataset.confirm='0'; btn.textContent='🗑 Eliminar'; btn.style.background=''; }, 3000);
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'Eliminando...';
+  fetch('/api/productos?accion=eliminar&id=' + id, { method: 'DELETE' })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) { cargarProductos(); showToast('Producto eliminado','ok'); }
+      else { showToast('Error al eliminar.','err'); btn.disabled=false; btn.textContent='🗑 Eliminar'; btn.style.background=''; }
+    })
+    .catch(() => { showToast('Error de red','err'); btn.disabled=false; btn.textContent='🗑 Eliminar'; btn.style.background=''; });
 }
 
 // ── CARGAR PRODUCTOS ──────────────────────────────────────────
@@ -675,7 +685,14 @@ async function moderarResena(resenaId, aprobada) {
 }
 
 async function eliminarResena(resenaId) {
-  if (!confirm('¿Eliminar esta reseña?')) return;
+  // Simple inline confirm via toast — non-blocking
+  if (!eliminarResena._confirmed) {
+    eliminarResena._confirmed = resenaId;
+    showToast('Toca "Eliminar" de nuevo para confirmar','warn');
+    setTimeout(()=>{ eliminarResena._confirmed=null; }, 3000);
+    return;
+  }
+  eliminarResena._confirmed = null;
   await fetch('/api/resenas?accion=eliminar&producto_id=' + resenasProductoId + '&resena_id=' + resenaId, { method: 'DELETE' });
   cargarResenas();
 }
@@ -688,8 +705,8 @@ function updateStarsUI() {
 async function crearResenaManual() {
   const nombre     = document.getElementById('rm-nombre').value.trim();
   const comentario = document.getElementById('rm-comentario').value.trim();
-  if (!nombre || !comentario) return alert('Nombre y comentario son requeridos');
-  if (!starsVal) return alert('Selecciona una puntuación');
+  if (!nombre || !comentario) return showToast('Nombre y comentario son requeridos','warn');
+  if (!starsVal) return showToast('Selecciona una puntuación','warn');
 
   const fd = new FormData();
   fd.append('producto_id', resenasProductoId);
@@ -709,12 +726,30 @@ async function crearResenaManual() {
     cargarResenas();
     setTimeout(() => document.getElementById('rm-msg').textContent = '', 3000);
   } else {
-    alert('Error: ' + d.error);
+    showToast('Error: ' + d.error,'err');
   }
 }
 
 // ── UTILS ─────────────────────────────────────────────────────
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── TOAST ─────────────────────────────────────────────────────
+(function(){
+  const el = document.createElement('div');
+  el.id = 'kmt-toast';
+  el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(24px);background:#1a1a1a;color:#fff;padding:12px 24px;border-radius:24px;font-size:14px;font-weight:600;z-index:9999;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;white-space:nowrap;max-width:90vw;text-align:center;box-shadow:0 4px 18px rgba(0,0,0,.25)';
+  document.body.appendChild(el);
+  let _t;
+  window.showToast = function(msg, type){
+    clearTimeout(_t);
+    const icons = {ok:'✅ ',err:'❌ ',warn:'⚠️ '};
+    el.textContent = (icons[type]||'') + msg;
+    el.style.background = type==='err'?'#c0392b': type==='ok'?'#1a7a3e':'#1a1a1a';
+    el.style.opacity = '1';
+    el.style.transform = 'translateX(-50%) translateY(0)';
+    _t = setTimeout(()=>{el.style.opacity='0';el.style.transform='translateX(-50%) translateY(12px)';},3500);
+  };
+})();
 
 // ── SESIÓN ────────────────────────────────────────────────────
 fetch('/api/sesion')

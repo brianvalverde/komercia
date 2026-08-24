@@ -383,7 +383,7 @@ function renderBannersGrid() {
     div.innerHTML = `
       <span class="drag-handle" title="Arrastrar">⠿</span>
       <img src="${url}" alt="Banner ${i+1}" loading="lazy">
-      <button class="banner-del" onclick="eliminarBanner('${url}')">✕</button>
+      <button class="banner-del" onclick="eliminarBanner('${url}',this)">✕</button>
     `;
     // Drag & drop
     div.addEventListener('dragstart', e => e.dataTransfer.setData('text/plain', i));
@@ -449,14 +449,24 @@ document.getElementById('banner-input').addEventListener('change', async functio
   xhr.send(fd);
 });
 
-async function eliminarBanner(url) {
-  if (!confirm('¿Eliminar este banner?')) return;
+function eliminarBanner(url, btn) {
+  if (btn && btn.dataset.confirm !== '1') {
+    btn.dataset.confirm = '1';
+    const orig = btn.textContent;
+    btn.textContent = '¿Confirmar?';
+    btn.style.background = '#e74c3c';
+    setTimeout(() => { btn.dataset.confirm='0'; btn.textContent=orig; btn.style.background=''; }, 3000);
+    return;
+  }
+  if (btn) { btn.dataset.confirm='0'; btn.style.background=''; }
   const fd = new FormData();
   fd.append('url', url);
-  const res = await fetch('/api/tienda?accion=eliminar_banner', {method:'POST', body:fd});
-  const data = await res.json();
-  if (data.ok) { banners = data.banners; renderBannersGrid(); toast('Banner eliminado'); }
-  else toast(data.error || 'Error al eliminar', true);
+  fetch('/api/tienda?accion=eliminar_banner', {method:'POST', body:fd})
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) { banners = data.banners; renderBannersGrid(); toast('Banner eliminado'); }
+      else toast(data.error || 'Error al eliminar', true);
+    });
 }
 
 async function reordenarBanners() {
