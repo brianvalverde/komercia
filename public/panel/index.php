@@ -32,6 +32,25 @@ body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:
 .topbar-left p{font-size:12px;color:#888;margin-top:2px}
 .topbar-right{display:flex;align-items:center;gap:12px}
 
+/* ── Store switcher ──────────────────────────────── */
+.store-switcher{position:relative}
+.store-switcher-btn{display:flex;align-items:center;gap:8px;padding:7px 12px;background:#f8f9fb;border:1.5px solid #e8eaf0;border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;color:#1a1a2e;transition:all .2s;white-space:nowrap;max-width:180px}
+.store-switcher-btn:hover{border-color:#ff6a00;color:#ff6a00}
+.store-switcher-btn .store-name{overflow:hidden;text-overflow:ellipsis}
+.store-switcher-btn .arr{font-size:10px;color:#aaa;flex-shrink:0}
+.store-dropdown{position:absolute;top:44px;right:0;width:240px;background:#fff;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.14);border:1px solid #e8eaf0;z-index:200;overflow:hidden;display:none}
+.store-dropdown.open{display:block}
+.store-dropdown-head{padding:10px 14px;font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #f0f0f0}
+.store-item{padding:11px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:background .15s;font-size:13px}
+.store-item:hover{background:#fff5f0}
+.store-item.active{background:#fff5f0;font-weight:700;color:#ff6a00}
+.store-item-icon{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#ff6a00,#ee0979);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.store-item-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.store-item-check{color:#ff6a00;font-size:14px;flex-shrink:0}
+.store-dropdown-foot{border-top:1px solid #f0f0f0;padding:10px 14px}
+.store-dropdown-foot a{display:flex;align-items:center;gap:6px;font-size:13px;color:#888;text-decoration:none;transition:color .2s}
+.store-dropdown-foot a:hover{color:#ff6a00}
+
 /* ── Bell notification ───────────────────────────── */
 .bell-wrap{position:relative;cursor:pointer}
 .bell-btn{background:#f5f5f5;border:none;border-radius:10px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s;position:relative}
@@ -147,6 +166,18 @@ body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 003.41 3.48M3.41 3.48A10 10 0 004.93 19.07M4.93 19.07A10 10 0 0020.59 20.52M20.59 20.52A10 10 0 0019.07 4.93"/></svg>
       Configuración
     </a>
+    <a href="/panel/tiendas">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Mis tiendas
+    </a>
+    <a href="/panel/vendedores">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      Vendedores
+    </a>
+    <a href="/panel/planes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Planes
+    </a>
   </nav>
 </aside>
 
@@ -157,11 +188,32 @@ body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:
     <p id="topbar-date">Cargando fecha...</p>
   </div>
   <div class="topbar-right">
+    <!-- Store switcher (solo empresarial) -->
+    <div class="store-switcher" id="store-switcher" style="display:none">
+      <button class="store-switcher-btn" onclick="toggleStoreDropdown()">
+        🏪 <span class="store-name" id="store-switcher-name">Mi tienda</span>
+        <span class="arr">▾</span>
+      </button>
+      <div class="store-dropdown" id="store-dropdown">
+        <div class="store-dropdown-head">Mis tiendas</div>
+        <div id="store-list">…</div>
+        <div class="store-dropdown-foot">
+          <a href="/panel/tiendas">⚙️ Gestionar tiendas</a>
+        </div>
+      </div>
+    </div>
+
     <!-- Copy store link -->
     <button class="copy-link-btn" onclick="copyStoreLink()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
       Mi tienda
     </button>
+
+    <!-- Cerrar sesión -->
+    <a href="/logout" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#f5f5f5;border:1.5px solid #e0e0e0;border-radius:10px;font-size:13px;font-weight:600;color:#888;text-decoration:none;transition:all .2s" onmouseover="this.style.borderColor='#ee0979';this.style.color='#ee0979'" onmouseout="this.style.borderColor='#e0e0e0';this.style.color='#888'">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Salir
+    </a>
 
     <!-- Bell -->
     <div class="bell-wrap" id="bell-wrap">
@@ -185,6 +237,9 @@ body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:
 <!-- Main content -->
 <div class="main">
   <div class="content">
+
+    <!-- Plan banner (se llena desde JS) -->
+    <div id="plan-banner" style="display:none;border-radius:14px;padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap"></div>
 
     <!-- Store link hero -->
     <div class="store-link-card">
@@ -475,8 +530,86 @@ function verPedidos() {
 // ── Init & polling ────────────────────────────────────────────
 cargarStats();
 cargarProductosStats();
-// Poll every 30 seconds
+cargarPlan();
+cargarStoreSwitcher();
 setInterval(cargarStats, 30000);
+
+// ── Store switcher ─────────────────────────────────────────────
+async function cargarStoreSwitcher() {
+  try {
+    const r = await fetch('/api/tiendas?accion=lista');
+    const d = await r.json();
+    if (!d.ok || d.tiendas.length <= 1) return;
+    document.getElementById('store-switcher').style.display = 'block';
+    const activa = d.tiendas.find(t => t.id === (d.activa||'main')) || d.tiendas[0];
+    document.getElementById('store-switcher-name').textContent = activa.nombre;
+    document.getElementById('store-list').innerHTML = d.tiendas.map(t => `
+      <div class="store-item${t.id===(d.activa||'main')?' active':''}" onclick="switchStore('${t.id}','${t.nombre.replace(/'/g,"\\'")}')">
+        <div class="store-item-icon">${t.id==='main'?'🏪':'🛍️'}</div>
+        <div class="store-item-name">${t.nombre}</div>
+        ${t.id===(d.activa||'main')? '<span class="store-item-check">✓</span>':''}
+      </div>`).join('');
+  } catch(e) {}
+}
+function toggleStoreDropdown(){
+  document.getElementById('store-dropdown').classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  if (!document.getElementById('store-switcher')?.contains(e.target))
+    document.getElementById('store-dropdown')?.classList.remove('open');
+});
+async function switchStore(tid, nombre) {
+  document.getElementById('store-dropdown').classList.remove('open');
+  const r = await fetch('/api/tiendas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'cambiar',tienda_id:tid})});
+  const d = await r.json();
+  if (d.ok) { document.getElementById('store-switcher-name').textContent = nombre; location.reload(); }
+}
+
+// ── PLAN BANNER ────────────────────────────────────────────────
+async function cargarPlan() {
+  try {
+    const res  = await fetch('/api/plan?accion=info');
+    const data = await res.json();
+    if (!data.ok) return;
+    const banner = document.getElementById('plan-banner');
+    const configs = {
+      trial: {
+        bg: data.vencido ? '#ffeaea' : '#fff8e1',
+        border: data.vencido ? '#e74c3c' : '#f59e0b',
+        icon: data.vencido ? '⚠️' : '🕐',
+        badgeBg: data.vencido ? '#e74c3c' : '#f59e0b',
+        msg: data.vencido
+          ? 'Tu período de prueba venció. Activa un plan para que tu tienda sea visible.'
+          : `Te quedan <strong>${data.dias_restantes} día${data.dias_restantes!==1?'s':''}</strong> de prueba · límite 10 productos`,
+        cta: 'Ver planes',
+      },
+      pro: {
+        bg:'#f0fdf4', border:'#22c55e', icon:'✅', badgeBg:'#22c55e',
+        msg: data.plan_expira
+          ? `Plan Pro · Vence ${new Date(data.plan_expira).toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})}`
+          : 'Plan Pro activo',
+        cta: null,
+      },
+      empresarial: {
+        bg:'#f5f3ff', border:'#7c3aed', icon:'🚀', badgeBg:'#7c3aed',
+        msg: 'Plan Empresarial · Multi-tienda habilitado',
+        cta: null,
+      },
+    };
+    const cfg = configs[data.plan] || configs.trial;
+    banner.style.cssText = `display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;border-radius:14px;padding:14px 20px;margin-bottom:20px;background:${cfg.bg};border:1.5px solid ${cfg.border}`;
+    banner.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;flex:1">
+        <span style="font-size:22px">${cfg.icon}</span>
+        <div>
+          <span style="display:inline-block;background:${cfg.badgeBg};color:#fff;border-radius:20px;padding:2px 12px;font-size:12px;font-weight:700;margin-bottom:4px">${data.plan_label}</span>
+          <div style="font-size:13px;color:#444">${cfg.msg}</div>
+        </div>
+      </div>
+      ${cfg.cta ? `<a href="/panel/planes" style="background:linear-gradient(135deg,#ff6a00,#ee0979);color:#fff;border-radius:10px;padding:9px 18px;font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap">${cfg.cta}</a>` : ''}
+    `;
+  } catch(e) {}
+}
 </script>
 </body>
 </html>

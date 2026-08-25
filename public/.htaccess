@@ -3,15 +3,24 @@ RewriteEngine On
 
 RewriteRule ^registro$            registro.php         [L]
 RewriteRule ^login$               login.php            [L]
+RewriteRule ^logout$   logout.php  [L]
 RewriteRule ^recuperar$             recuperar.php        [L]
 RewriteRule ^panel$               panel/index.php      [L]
 RewriteRule ^panel/productos$     panel/productos.php  [L]
 RewriteRule ^tienda/([a-z0-9-]+)$ tienda.php?slug=$1  [L,QSA]
 RewriteRule ^panel/configuracion$ panel/configuracion.php [L]
 RewriteRule ^panel/pedidos$  panel/pedidos.php  [L]
+RewriteRule ^panel/planes$     panel/planes.php  [L]
+RewriteRule ^panel/tiendas$   panel/tiendas.php  [L]
+RewriteRule ^admin/login$  admin/login.php  [L]
+RewriteRule ^admin/logout$ admin/logout.php [L]
+RewriteRule ^admin/accion$    admin/accion.php  [L]
+RewriteRule ^admin$        admin/index.php  [L]
 RewriteRule ^tienda/([a-z0-9-]+)/producto/([a-zA-Z0-9_]+)$ producto.php?slug=$1&id=$2 [L,QSA]
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_URI} ^/api/
 RewriteRule ^api/(.+)$            api/$1.php           [L]
+RewriteRule ^panel/vendedores$         panel/vendedores.php [L]
+RewriteRule ^vendedor/([a-z0-9-]+)$    vendedor.php?slug=$1 [L,QSA]
