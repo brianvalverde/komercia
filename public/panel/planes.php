@@ -1,6 +1,6 @@
 <?php
 session_start();
-if (empty($_SESSION['uid']) || empty($_SESSION['slug'])) {
+if (empty($_SESSION['uid'])) {
     header('Location: /login');
     exit;
 }

@@ -124,8 +124,14 @@ if ($method === 'POST' && $accion === 'cambiar') {
         $doc = firestoreRequest('GET', "comerciantes/{$uid}/tiendas/{$tid}");
         $f   = $doc['fields'] ?? [];
         if (empty($f)) { echo json_encode(['ok'=>false,'error'=>'Tienda no encontrada']); exit; }
+        $slugTienda = fsv($f,'slug','');
+        // Si la tienda adicional no tiene slug (datos corruptos), usar slug de tienda principal
+        if (empty($slugTienda)) {
+            $mainDoc    = firestoreRequest('GET', "comerciantes/{$uid}");
+            $slugTienda = fsv($mainDoc['fields'] ?? [], 'slug', '');
+        }
         $_SESSION['tienda_activa'] = $tid;
-        $_SESSION['slug']          = fsv($f,'slug','');
+        $_SESSION['slug']          = $slugTienda;
         $_SESSION['tienda_nombre'] = fsv($f,'nombre','');
         echo json_encode(['ok'=>true,'slug'=>$_SESSION['slug'],'nombre'=>$_SESSION['tienda_nombre']]);
     }

@@ -93,6 +93,27 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;color:#333}
   .hamburger{display:block}
   .products-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
 }
+/* Toast */
+.toast-msg{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;max-width:320px}
+.toast-msg.show{opacity:1;transform:translateY(0)}
+.toast-msg.success{background:#1a1a2e;color:#fff}
+.toast-msg.error{background:#e03;color:#fff}
+/* Modal confirmación */
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1100;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;visibility:hidden;transition:all .2s}
+.confirm-overlay.open{opacity:1;visibility:visible}
+.confirm-box{background:#fff;border-radius:20px;width:100%;max-width:400px;box-shadow:0 24px 64px rgba(0,0,0,.2);transform:scale(.94);transition:transform .2s;overflow:hidden}
+.confirm-overlay.open .confirm-box{transform:scale(1)}
+.confirm-icon{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;margin:28px auto 0}
+.confirm-icon.danger{background:#fff0f0}
+.confirm-icon.warning{background:#fff8e1}
+.confirm-box h3{font-size:17px;font-weight:700;color:#1a1a2e;text-align:center;margin:14px 24px 8px}
+.confirm-box p{font-size:13px;color:#777;text-align:center;margin:0 24px 24px;line-height:1.6}
+.confirm-btns{display:flex;border-top:1px solid #f0f0f0}
+.confirm-btns button{flex:1;padding:16px;font-size:14px;font-weight:600;border:none;cursor:pointer;transition:background .15s;font-family:inherit}
+.confirm-btns .cb-cancel{background:#fff;color:#888;border-right:1px solid #f0f0f0;border-radius:0 0 0 20px}
+.confirm-btns .cb-cancel:hover{background:#f8f8f8}
+.confirm-btns .cb-confirm.danger{background:#fff;color:#e03;border-radius:0 0 20px 0}
+.confirm-btns .cb-confirm.danger:hover{background:#fff5f5}
 </style>
 </head>
 <body>
@@ -159,6 +180,20 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;color:#333}
     </div>
   </div>
 </div>
+<!-- Modal confirmación -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-icon" id="confirm-icon">⚠️</div>
+    <h3 id="confirm-title">¿Estás seguro?</h3>
+    <p id="confirm-msg"></p>
+    <div class="confirm-btns">
+      <button class="cb-cancel" onclick="confirmResolve(false)">Cancelar</button>
+      <button class="cb-confirm" id="confirm-ok-btn" onclick="confirmResolve(true)">Confirmar</button>
+    </div>
+  </div>
+</div>
+<div class="toast-msg" id="toast-msg"></div>
+
 <!-- MODAL AGREGAR PRODUCTO -->
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal">
@@ -346,8 +381,8 @@ function mostrarPreview(file, originalSize) {
 
 async function procesarArchivo(file) {
   const allowed = ['image/jpeg','image/png','image/webp'];
-  if (!allowed.includes(file.type)) { alert('Solo se permiten imágenes JPG, PNG o WEBP'); return null; }
-  if (file.size > 15 * 1024 * 1024) { alert('La imagen no puede superar 15MB'); return null; }
+  if (!allowed.includes(file.type)) { showToast('Solo se permiten imágenes JPG, PNG o WEBP', 'error'); return null; }
+  if (file.size > 15 * 1024 * 1024) { showToast('La imagen no puede superar 15MB', 'error'); return null; }
   const originalSize = file.size;
   // Mostrar estado de procesando
   const filename = document.getElementById('drop-filename');
@@ -404,10 +439,10 @@ document.getElementById('form-producto').addEventListener('submit', async functi
       cerrarModal();
       cargarProductos();
     } else {
-      alert('Error: ' + data.error);
+      showToast('Error: ' + data.error, 'error');
     }
   } catch (err) {
-    alert('Error de red al guardar el producto.');
+    showToast('Error de red al guardar el producto.', 'error');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Guardar Producto';
@@ -415,13 +450,19 @@ document.getElementById('form-producto').addEventListener('submit', async functi
 });
 // ── Eliminar producto ──
 async function eliminarProducto(id, btn) {
-  if (!confirm('¿Eliminar este producto?')) return;
+  const ok = await modalConfirm({
+    icon: '🗑️', tipo: 'danger',
+    titulo: '¿Eliminar producto?',
+    mensaje: 'Se eliminará el producto permanentemente. Esta acción no se puede deshacer.',
+    btnTexto: 'Sí, eliminar'
+  });
+  if (!ok) return;
   btn.disabled = true;
   btn.textContent = '...';
   const res  = await fetch('/api/productos?accion=eliminar&id=' + id, { method: 'DELETE' });
   const data = await res.json();
   if (data.ok) cargarProductos();
-  else { alert('Error al eliminar.'); btn.disabled = false; btn.textContent = '🗑 Eliminar'; }
+  else { showToast('Error al eliminar.', 'error'); btn.disabled = false; btn.textContent = '🗑 Eliminar'; }
 }
 // ── Sidebar ──
 function toggleSidebar() {
@@ -440,6 +481,35 @@ function logout() {
 document.getElementById('modal-overlay').addEventListener('click', function(e) {
   if (e.target === this) cerrarModal();
 });
+// ── Confirm modal ──
+let confirmResolve = () => {};
+function modalConfirm({ icon='⚠️', tipo='danger', titulo='¿Estás seguro?', mensaje='', btnTexto='Confirmar' } = {}) {
+  return new Promise(resolve => {
+    document.getElementById('confirm-icon').textContent = icon;
+    document.getElementById('confirm-icon').className = `confirm-icon ${tipo}`;
+    document.getElementById('confirm-title').textContent = titulo;
+    document.getElementById('confirm-msg').innerHTML = mensaje;
+    const btn = document.getElementById('confirm-ok-btn');
+    btn.textContent = btnTexto;
+    btn.className = `cb-confirm ${tipo}`;
+    confirmResolve = (val) => {
+      document.getElementById('confirm-overlay').classList.remove('open');
+      resolve(val);
+    };
+    document.getElementById('confirm-overlay').classList.add('open');
+  });
+}
+document.getElementById('confirm-overlay').addEventListener('click', function(e) {
+  if (e.target === this) confirmResolve(false);
+});
+// ── Toast ──
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast-msg');
+  t.textContent = msg;
+  t.className = `toast-msg ${type} show`;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 3500);
+}
 </script>
 </body>
 </html>

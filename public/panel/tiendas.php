@@ -1,6 +1,6 @@
 <?php
 session_start();
-if (empty($_SESSION['uid']) || empty($_SESSION['slug'])) {
+if (empty($_SESSION['uid'])) {
     header('Location: /login');
     exit;
 }
@@ -77,6 +77,23 @@ input:focus{border-color:#ff6a00}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);padding:12px 22px;border-radius:12px;font-size:14px;font-weight:500;opacity:0;transition:all .3s;z-index:999;pointer-events:none;white-space:nowrap;background:#1a1a2e;color:#fff}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #toast.ok{background:#1a7a3e}#toast.err{background:#c0392b}
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1100;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;visibility:hidden;transition:all .2s}
+.confirm-overlay.open{opacity:1;visibility:visible}
+.confirm-box{background:#fff;border-radius:20px;width:100%;max-width:400px;box-shadow:0 24px 64px rgba(0,0,0,.2);transform:scale(.94);transition:transform .2s;overflow:hidden}
+.confirm-overlay.open .confirm-box{transform:scale(1)}
+.confirm-icon{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;margin:28px auto 0}
+.confirm-icon.danger{background:#fff0f0}
+.confirm-icon.warning{background:#fff8e1}
+.confirm-box h3{font-size:17px;font-weight:700;color:#1a1a2e;text-align:center;margin:14px 24px 8px}
+.confirm-box p{font-size:13px;color:#777;text-align:center;margin:0 24px 24px;line-height:1.6}
+.confirm-btns{display:flex;border-top:1px solid #f0f0f0}
+.confirm-btns button{flex:1;padding:16px;font-size:14px;font-weight:600;border:none;cursor:pointer;transition:background .15s;font-family:inherit}
+.confirm-btns .cb-cancel{background:#fff;color:#888;border-right:1px solid #f0f0f0;border-radius:0 0 0 20px}
+.confirm-btns .cb-cancel:hover{background:#f8f8f8}
+.confirm-btns .cb-confirm.danger{background:#fff;color:#e03;border-radius:0 0 20px 0}
+.confirm-btns .cb-confirm.danger:hover{background:#fff5f5}
+.confirm-btns .cb-confirm.warning{background:#fff;color:#ff6a00;border-radius:0 0 20px 0}
+.confirm-btns .cb-confirm.warning:hover{background:#fff8f0}
 </style>
 </head>
 <body>
@@ -172,6 +189,19 @@ input:focus{border-color:#ff6a00}
 <?php endif; ?>
 
 </div></div>
+<!-- Modal confirmación -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-icon" id="confirm-icon">⚠️</div>
+    <h3 id="confirm-title">¿Estás seguro?</h3>
+    <p id="confirm-msg"></p>
+    <div class="confirm-btns">
+      <button class="cb-cancel" onclick="confirmResolve(false)">Cancelar</button>
+      <button class="cb-confirm" id="confirm-ok-btn" onclick="confirmResolve(true)">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -238,7 +268,13 @@ async function crearTienda() {
 
 // ── Eliminar tienda ───────────────────────────────────────────
 async function eliminarTienda(tid, nombre) {
-  if (!confirm(`¿Eliminar la tienda "${nombre}"? Esta acción no se puede deshacer.`)) return;
+  const ok = await modalConfirm({
+    icon: '🗑️', tipo: 'danger',
+    titulo: '¿Eliminar tienda?',
+    mensaje: `Se eliminará <strong>${nombre}</strong> y todos sus datos. Esta acción no se puede deshacer.`,
+    btnTexto: 'Sí, eliminar'
+  });
+  if (!ok) return;
   const r = await fetch('/api/tiendas', {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({accion:'eliminar', tienda_id: tid})
@@ -263,6 +299,28 @@ cargarTiendas();
 <?php endif; ?>
 
 function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+// ── Modal de confirmación ────────────────────────────────────
+let confirmResolve = () => {};
+function modalConfirm({ icon='⚠️', tipo='danger', titulo='¿Estás seguro?', mensaje='', btnTexto='Confirmar' } = {}) {
+  return new Promise(resolve => {
+    document.getElementById('confirm-icon').textContent = icon;
+    document.getElementById('confirm-icon').className = `confirm-icon ${tipo}`;
+    document.getElementById('confirm-title').textContent = titulo;
+    document.getElementById('confirm-msg').innerHTML = mensaje;
+    const btn = document.getElementById('confirm-ok-btn');
+    btn.textContent = btnTexto;
+    btn.className = `cb-confirm ${tipo}`;
+    confirmResolve = (val) => {
+      document.getElementById('confirm-overlay').classList.remove('open');
+      resolve(val);
+    };
+    document.getElementById('confirm-overlay').classList.add('open');
+  });
+}
+document.getElementById('confirm-overlay').addEventListener('click', function(e) {
+  if (e.target === this) confirmResolve(false);
+});
 
 let _tt;
 function toast(msg,type=''){

@@ -62,11 +62,25 @@ try {
     exit;
 }
 
+// Si slug estaba vacío en Firestore, intentar recuperarlo desde tiendas raíz
+if (empty($slug)) {
+    $tiendasRes = firestoreRequest('GET', "tiendas?pageSize=5");
+    foreach ($tiendasRes['documents'] ?? [] as $tdoc) {
+        $tf = $tdoc['fields'] ?? [];
+        if (($tf['uid']['stringValue'] ?? '') === $uid && !empty($tf['slug']['stringValue'])) {
+            $slug = $tf['slug']['stringValue'];
+            break;
+        }
+    }
+}
+
 session_start();
-$_SESSION['uid']    = $uid;
-$_SESSION['email']  = $email;
-$_SESSION['slug']   = $slug;
-$_SESSION['nombre'] = $nombre;
-$_SESSION['plan']   = $plan;
+$_SESSION['uid']           = $uid;
+$_SESSION['email']         = $email;
+$_SESSION['slug']          = $slug;
+$_SESSION['nombre']        = $nombre;
+$_SESSION['plan']          = $plan;
+// Limpiar contexto de tienda adicional al iniciar sesión
+unset($_SESSION['tienda_activa'], $_SESSION['tienda_nombre']);
 
 echo json_encode(['ok' => true, 'uid' => $uid, 'slug' => $slug, 'nombre' => $nombre]);

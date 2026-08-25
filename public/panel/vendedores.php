@@ -1,6 +1,6 @@
 <?php
 session_start();
-if (empty($_SESSION['uid']) || empty($_SESSION['slug'])) {
+if (empty($_SESSION['uid'])) {
     header('Location: /login');
     exit;
 }
@@ -101,6 +101,28 @@ body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:
 .toast.show{opacity:1;transform:translateY(0)}
 .toast.success{background:#1a1a2e;color:#fff}
 .toast.error{background:#e03;color:#fff}
+/* Modal confirmación */
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1100;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;visibility:hidden;transition:all .2s}
+.confirm-overlay.open{opacity:1;visibility:visible}
+.confirm-box{background:#fff;border-radius:20px;width:100%;max-width:400px;box-shadow:0 24px 64px rgba(0,0,0,.2);transform:scale(.94);transition:transform .2s;overflow:hidden}
+.confirm-overlay.open .confirm-box{transform:scale(1)}
+.confirm-icon{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;margin:28px auto 0}
+.confirm-icon.danger{background:#fff0f0}
+.confirm-icon.warning{background:#fff8e1}
+.confirm-icon.info{background:#e8f4fd}
+.confirm-box h3{font-size:17px;font-weight:700;color:#1a1a2e;text-align:center;margin:14px 24px 8px}
+.confirm-box p{font-size:13px;color:#777;text-align:center;margin:0 24px 24px;line-height:1.6}
+.confirm-btns{display:flex;border-top:1px solid #f0f0f0}
+.confirm-btns button{flex:1;padding:16px;font-size:14px;font-weight:600;border:none;cursor:pointer;transition:background .15s;font-family:inherit}
+.confirm-btns .cb-cancel{background:#fff;color:#888;border-right:1px solid #f0f0f0;border-radius:0 0 0 20px}
+.confirm-btns .cb-cancel:hover{background:#f8f8f8}
+.confirm-btns .cb-confirm{background:#fff;border-radius:0 0 20px 0}
+.confirm-btns .cb-confirm.danger{color:#e03}
+.confirm-btns .cb-confirm.danger:hover{background:#fff5f5}
+.confirm-btns .cb-confirm.warning{color:#ff6a00}
+.confirm-btns .cb-confirm.warning:hover{background:#fff8f0}
+.confirm-btns .cb-confirm.info{color:#1a7ac7}
+.confirm-btns .cb-confirm.info:hover{background:#f0f7ff}
 
 /* Login link info */
 .login-info{background:#f0f8ff;border:1.5px solid #b0d8f0;border-radius:12px;padding:14px 18px;margin-bottom:24px;font-size:13px;color:#1a5f8a}
@@ -234,6 +256,19 @@ body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:
   </div>
 </div>
 
+<!-- Modal confirmación -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-icon" id="confirm-icon">⚠️</div>
+    <h3 id="confirm-title">¿Estás seguro?</h3>
+    <p id="confirm-msg"></p>
+    <div class="confirm-btns">
+      <button class="cb-cancel" onclick="confirmResolve(false)">Cancelar</button>
+      <button class="cb-confirm" id="confirm-ok-btn" onclick="confirmResolve(true)">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -338,7 +373,13 @@ async function guardarVendedor() {
 }
 
 async function regenerarCodigo(vid) {
-  if (!confirm('¿Regenerar el código de acceso? El código anterior dejará de funcionar.')) return;
+  const ok = await modalConfirm({
+    icon: '🔑', tipo: 'warning',
+    titulo: 'Regenerar código',
+    mensaje: 'El código anterior dejará de funcionar inmediatamente. ¿Continuar?',
+    btnTexto: 'Sí, regenerar'
+  });
+  if (!ok) return;
   try {
     const r = await fetch('/api/vendedores', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({accion:'regenerar_codigo',vendedor_id:vid}) });
     const d = await r.json();
@@ -351,7 +392,13 @@ async function regenerarCodigo(vid) {
 }
 
 async function eliminarVendedor(vid, nombre) {
-  if (!confirm(`¿Eliminar al vendedor "${nombre}"?`)) return;
+  const ok = await modalConfirm({
+    icon: '🗑️', tipo: 'danger',
+    titulo: '¿Eliminar vendedor?',
+    mensaje: `Se eliminará a <strong>${nombre}</strong> y perderá acceso al panel. Esta acción no se puede deshacer.`,
+    btnTexto: 'Sí, eliminar'
+  });
+  if (!ok) return;
   try {
     const r = await fetch('/api/vendedores', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({accion:'eliminar',vendedor_id:vid}) });
     const d = await r.json();
@@ -399,6 +446,28 @@ function enviarWA(telefono, nombre, codigo) {
   const texto = encodeURIComponent(`¡Hola ${nombre}! 👋\nTe invitamos a acceder al panel de vendedor de nuestra tienda.\n\n🔗 Link: ${link}\n🔑 Tu código: *${codigo}*\n\n¡Ingresa y revisa tus pedidos!`);
   window.open(`https://wa.me/${telefono}?text=${texto}`, '_blank');
 }
+
+// ── Modal de confirmación ────────────────────────────────────
+let confirmResolve = () => {};
+function modalConfirm({ icon='⚠️', tipo='danger', titulo='¿Estás seguro?', mensaje='', btnTexto='Confirmar' } = {}) {
+  return new Promise(resolve => {
+    document.getElementById('confirm-icon').textContent = icon;
+    document.getElementById('confirm-icon').className = `confirm-icon ${tipo}`;
+    document.getElementById('confirm-title').textContent = titulo;
+    document.getElementById('confirm-msg').innerHTML = mensaje;
+    const btn = document.getElementById('confirm-ok-btn');
+    btn.textContent = btnTexto;
+    btn.className = `cb-confirm ${tipo}`;
+    confirmResolve = (val) => {
+      document.getElementById('confirm-overlay').classList.remove('open');
+      resolve(val);
+    };
+    document.getElementById('confirm-overlay').classList.add('open');
+  });
+}
+document.getElementById('confirm-overlay').addEventListener('click', function(e) {
+  if (e.target === this) confirmResolve(false);
+});
 
 function showToast(msg, type='success') {
   const t = document.getElementById('toast');
