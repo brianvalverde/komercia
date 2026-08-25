@@ -94,6 +94,30 @@ input:focus{border-color:#ff6a00}
 .confirm-btns .cb-confirm.danger:hover{background:#fff5f5}
 .confirm-btns .cb-confirm.warning{background:#fff;color:#ff6a00;border-radius:0 0 20px 0}
 .confirm-btns .cb-confirm.warning:hover{background:#fff8f0}
+.confirm-icon.info{background:#f0f4ff}
+.confirm-btns .cb-confirm.info{background:#fff;color:#1a73e8;border-radius:0 0 20px 0}
+.confirm-btns .cb-confirm.info:hover{background:#f0f4ff}
+/* Modal editar tienda */
+.edit-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1200;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;visibility:hidden;transition:all .2s}
+.edit-modal-overlay.open{opacity:1;visibility:visible}
+.edit-modal{background:#fff;border-radius:16px;width:100%;max-width:420px;box-shadow:0 24px 64px rgba(0,0,0,.18);transform:scale(.95);transition:transform .2s;overflow:hidden}
+.edit-modal-overlay.open .edit-modal{transform:scale(1)}
+.edit-modal-header{padding:24px 24px 0;display:flex;align-items:center;gap:12px;border-bottom:1px solid #f0f0f0;padding-bottom:16px}
+.edit-modal-header .em-icon{width:44px;height:44px;background:linear-gradient(135deg,#ff6a00,#ee0979);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.edit-modal-header h3{font-size:16px;font-weight:700;color:#1a1a2e;margin:0}
+.edit-modal-header p{font-size:12px;color:#aaa;margin:2px 0 0}
+.edit-modal-body{padding:20px 24px}
+.edit-modal-body label{display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:5px;letter-spacing:.3px}
+.edit-modal-body input{width:100%;padding:10px 14px;border:1.5px solid #e8eaf0;border-radius:10px;font-size:14px;font-family:inherit;outline:none;transition:border .2s;color:#1a1a2e}
+.edit-modal-body input:focus{border-color:#ff6a00}
+.edit-modal-body .slug-preview{font-size:11px;color:#bbb;margin-top:5px}
+.edit-modal-body .slug-preview span{color:#ff6a00;font-weight:600}
+.edit-modal-footer{padding:0 24px 24px;display:flex;gap:10px;justify-content:flex-end}
+.edit-modal-footer .btn-cancel-em{padding:10px 18px;border-radius:10px;border:1.5px solid #e8eaf0;background:#fff;color:#888;font-size:14px;font-weight:500;cursor:pointer;transition:.2s;font-family:inherit}
+.edit-modal-footer .btn-cancel-em:hover{background:#f5f5f5}
+.edit-modal-footer .btn-save-em{padding:10px 22px;border-radius:10px;border:none;background:linear-gradient(135deg,#ff6a00,#ee0979);color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;font-family:inherit}
+.edit-modal-footer .btn-save-em:hover{opacity:.9}
+.edit-modal-footer .btn-save-em:disabled{opacity:.6;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -189,6 +213,36 @@ input:focus{border-color:#ff6a00}
 <?php endif; ?>
 
 </div></div>
+
+<!-- Modal editar tienda -->
+<div class="edit-modal-overlay" id="edit-overlay">
+  <div class="edit-modal">
+    <input type="hidden" id="edit-tid">
+    <div class="edit-modal-header">
+      <div class="em-icon">✏️</div>
+      <div>
+        <h3>Editar tienda</h3>
+        <p>Actualiza el nombre y URL de tu tienda</p>
+      </div>
+    </div>
+    <div class="edit-modal-body">
+      <div style="margin-bottom:16px">
+        <label>NOMBRE DE LA TIENDA</label>
+        <input id="edit-nombre" type="text" placeholder="Ej: Tienda Norte">
+      </div>
+      <div>
+        <label>SLUG (URL)</label>
+        <input id="edit-slug" type="text" placeholder="tienda-norte">
+        <div class="slug-preview">komercia.online/tienda/<span id="edit-slug-prev">—</span></div>
+      </div>
+    </div>
+    <div class="edit-modal-footer">
+      <button class="btn-cancel-em" onclick="cerrarEditModal()">Cancelar</button>
+      <button class="btn-save-em" id="edit-ok-btn" onclick="guardarEdicion()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal confirmación -->
 <div class="confirm-overlay" id="confirm-overlay">
   <div class="confirm-box">
@@ -228,6 +282,7 @@ async function cargarTiendas() {
       <div class="sc-actions">
         ${!esActiva ? `<button class="btn btn-primary" onclick="cambiarTienda('${t.id}','${esc(t.nombre)}')">⚡ Activar</button>` : '<span style="font-size:13px;color:#ff6a00;font-weight:600">✓ Activa</span>'}
         <a href="https://komercia.online/tienda/${esc(t.slug)}" target="_blank" class="btn btn-gray">🔗 Ver</a>
+        ${!esPrincipal ? `<button class="btn btn-gray" onclick="abrirEditModal('${t.id}','${esc(t.nombre)}','${esc(t.slug)}')">✏️</button>` : ''}
         ${!esPrincipal ? `<button class="btn btn-red" onclick="eliminarTienda('${t.id}','${esc(t.nombre)}')">🗑</button>` : ''}
       </div>
     </div>`;
@@ -284,15 +339,52 @@ async function eliminarTienda(tid, nombre) {
   else toast('❌ ' + (d.error||'Error'), 'err');
 }
 
-// ── Generar slug automático ───────────────────────────────────
+// ── Normalizar texto a slug (quita tildes, caracteres especiales) ─
+function toSlug(str) {
+  return str
+    .normalize('NFD')                        // descompone tildes: á → a + ́
+    .replace(/[̀-ͯ]/g, '')         // elimina los diacríticos
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')           // solo letras, números, espacios, guiones
+    .trim()
+    .replace(/[\s_]+/g, '-')                 // espacios/guiones bajos → guión
+    .replace(/-+/g, '-')                     // guiones múltiples → uno
+    .replace(/^-|-$/g, '');                  // quitar guiones al inicio/fin
+}
+
+// ── Generar slug automático (crear tienda) ────────────────────
+let editSlugManual = false; // evita sobreescribir si el usuario ya editó el slug
+
 function genSlug() {
-  const n = document.getElementById('ns-nombre').value;
-  const s = n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  const s = toSlug(document.getElementById('ns-nombre').value);
   document.getElementById('ns-slug').value = s;
   document.getElementById('slug-prev').textContent = s || '—';
 }
 document.getElementById('ns-slug').addEventListener('input', function(){
+  this.value = toSlug(this.value + ' ').trimEnd() || this.value; // sanitiza mientras escribe
   document.getElementById('slug-prev').textContent = this.value || '—';
+});
+
+// ── Generar slug en modal de edición ─────────────────────────
+document.getElementById('edit-nombre').addEventListener('input', function() {
+  if (editSlugManual) return; // si el usuario ya tocó el slug, no lo sobreescribas
+  const s = toSlug(this.value);
+  document.getElementById('edit-slug').value = s;
+  document.getElementById('edit-slug-prev').textContent = s || '—';
+});
+document.getElementById('edit-slug').addEventListener('input', function() {
+  editSlugManual = true;
+  // Sanitiza mientras escribe (sin borrar lo que está escribiendo)
+  const pos = this.selectionStart;
+  const sanitized = toSlug(this.value + ' ').trimEnd() || this.value.replace(/[^a-z0-9-]/gi,'');
+  if (sanitized !== this.value) {
+    this.value = sanitized;
+    this.setSelectionRange(pos, pos);
+  }
+  document.getElementById('edit-slug-prev').textContent = this.value || '—';
+});
+document.getElementById('edit-slug').addEventListener('focus', function() {
+  editSlugManual = true; // marcar como manual al hacer foco
 });
 
 cargarTiendas();
@@ -327,6 +419,46 @@ function toast(msg,type=''){
   const el=document.getElementById('toast');
   el.textContent=msg;el.className='show '+(type==='ok'?'ok':type==='err'?'err':'');
   clearTimeout(_tt);_tt=setTimeout(()=>el.className='',3000);
+}
+
+// ── Modal editar tienda ──────────────────────────────────────
+function abrirEditModal(tid, nombre, slug) {
+  editSlugManual = !!slug; // si ya tiene slug, no auto-generar al escribir nombre
+  document.getElementById('edit-tid').value        = tid;
+  document.getElementById('edit-nombre').value     = nombre;
+  document.getElementById('edit-slug').value       = slug;
+  document.getElementById('edit-slug-prev').textContent = slug || '—';
+  document.getElementById('edit-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('edit-nombre').focus(), 150);
+}
+function cerrarEditModal() {
+  document.getElementById('edit-overlay').classList.remove('open');
+}
+document.getElementById('edit-overlay').addEventListener('click', function(e) {
+  if (e.target === this) cerrarEditModal();
+});
+document.getElementById('edit-slug').addEventListener('input', function() {
+  const v = this.value.trim().toLowerCase().replace(/[^a-z0-9-]/g,'-').replace(/-+/g,'-');
+  document.getElementById('edit-slug-prev').textContent = v || '—';
+});
+async function guardarEdicion() {
+  const tid    = document.getElementById('edit-tid').value;
+  const nombre = document.getElementById('edit-nombre').value.trim();
+  const slug   = document.getElementById('edit-slug').value.trim();
+  if (!nombre || !slug) { toast('❌ Completa nombre y slug', 'err'); return; }
+  const btn = document.getElementById('edit-ok-btn');
+  btn.disabled = true; btn.textContent = 'Guardando…';
+  const r = await fetch('/api/tiendas', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({accion:'actualizar', tienda_id:tid, nombre, slug})
+  });
+  const d = await r.json();
+  btn.disabled = false; btn.textContent = 'Guardar cambios';
+  if (d.ok) {
+    cerrarEditModal();
+    toast('✅ Tienda actualizada', 'ok');
+    cargarTiendas();
+  } else toast('❌ ' + (d.error||'Error'), 'err');
 }
 </script>
 </body>

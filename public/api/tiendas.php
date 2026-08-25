@@ -156,4 +156,52 @@ if ($method === 'POST' && $accion === 'eliminar') {
     exit;
 }
 
+// ── POST actualizar (nombre/slug de tienda adicional) ────────
+if ($method === 'POST' && $accion === 'actualizar') {
+    $tid    = trim($input['tienda_id'] ?? '');
+    $nombre = trim($input['nombre'] ?? '');
+    $slug   = trim(preg_replace('/[^a-z0-9-]/', '-', strtolower($input['slug'] ?? '')));
+    $slug   = trim(preg_replace('/-+/', '-', $slug), '-');
+
+    if (!$tid || $tid === 'main') { echo json_encode(['ok'=>false,'error'=>'ID de tienda inválido']); exit; }
+    if (!$nombre || !$slug)       { echo json_encode(['ok'=>false,'error'=>'Nombre y slug requeridos']); exit; }
+
+    // Obtener slug anterior para limpiar colección raíz si cambió
+    $doc     = firestoreRequest('GET', "comerciantes/{$uid}/tiendas/{$tid}");
+    $slugOld = $doc['fields']['slug']['stringValue'] ?? '';
+
+    // Verificar que el nuevo slug no esté en uso (salvo que sea el mismo)
+    if ($slug !== $slugOld) {
+        $check = firestoreRequest('GET', "tiendas/{$slug}");
+        if (!empty($check['fields'])) {
+            echo json_encode(['ok'=>false,'error'=>'Ese slug ya está en uso']); exit;
+        }
+        // Borrar entrada antigua en colección raíz
+        if ($slugOld) firestoreRequest('DELETE', "tiendas/{$slugOld}");
+        // Crear nueva entrada en colección raíz
+        $maskS = 'updateMask.fieldPaths=uid&updateMask.fieldPaths=tienda_id&updateMask.fieldPaths=slug';
+        firestoreRequest('PATCH', "tiendas/{$slug}?{$maskS}", ['fields' => [
+            'uid'       => ['stringValue' => $uid],
+            'tienda_id' => ['stringValue' => $tid],
+            'slug'      => ['stringValue' => $slug],
+        ]]);
+    }
+
+    // Actualizar subcolección del comerciante
+    $mask = 'updateMask.fieldPaths=nombre&updateMask.fieldPaths=slug';
+    firestoreRequest('PATCH', "comerciantes/{$uid}/tiendas/{$tid}?{$mask}", ['fields' => [
+        'nombre' => ['stringValue' => $nombre],
+        'slug'   => ['stringValue' => $slug],
+    ]]);
+
+    // Actualizar sesión si era la tienda activa
+    if (($_SESSION['tienda_activa'] ?? '') === $tid) {
+        $_SESSION['slug']          = $slug;
+        $_SESSION['tienda_nombre'] = $nombre;
+    }
+
+    echo json_encode(['ok'=>true,'nombre'=>$nombre,'slug'=>$slug]);
+    exit;
+}
+
 echo json_encode(['ok'=>false,'error'=>'Acción no reconocida']);
