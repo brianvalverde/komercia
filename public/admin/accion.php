@@ -31,7 +31,8 @@ function actualizarTiendasCascada($uid, $activo) {
     foreach ($res['documents'] ?? [] as $doc) {
         $parts = explode('/', $doc['name']);
         $tid   = end($parts);
-        firestoreRequest('PATCH', "comerciantes/{$uid}/tiendas/{$tid}", [
+        // updateMask evita borrar nombre/slug/created_at del documento
+        firestoreRequest('PATCH', "comerciantes/{$uid}/tiendas/{$tid}?updateMask.fieldPaths=activo", [
             'fields' => ['activo' => ['booleanValue' => $activo]]
         ]);
     }
@@ -41,8 +42,8 @@ function actualizarTiendasCascada($uid, $activo) {
 if ($accion === 'pausar') {
     if (!$uid) { echo json_encode(['ok'=>false,'error'=>'uid requerido']); exit; }
 
-    // 1. Marcar plan inactivo en comerciante principal
-    firestoreRequest('PATCH', "comerciantes/{$uid}", [
+    // 1. Marcar plan inactivo en comerciante principal (updateMask evita borrar otros campos)
+    firestoreRequest('PATCH', "comerciantes/{$uid}?updateMask.fieldPaths=plan_activo", [
         'fields' => ['plan_activo' => ['booleanValue' => false]]
     ]);
 
@@ -57,8 +58,8 @@ if ($accion === 'pausar') {
 if ($accion === 'reactivar') {
     if (!$uid) { echo json_encode(['ok'=>false,'error'=>'uid requerido']); exit; }
 
-    // 1. Reactivar plan en comerciante principal
-    firestoreRequest('PATCH', "comerciantes/{$uid}", [
+    // 1. Reactivar plan en comerciante principal (updateMask evita borrar otros campos)
+    firestoreRequest('PATCH', "comerciantes/{$uid}?updateMask.fieldPaths=plan_activo", [
         'fields' => ['plan_activo' => ['booleanValue' => true]]
     ]);
 
@@ -76,7 +77,8 @@ if ($accion === 'activar') {
     if (!$uid) { echo json_encode(['ok'=>false,'error'=>'uid requerido']); exit; }
 
     $expira = date('c', strtotime("+{$meses} months"));
-    firestoreRequest('PATCH', "comerciantes/{$uid}", [
+    $mask = 'updateMask.fieldPaths=plan&updateMask.fieldPaths=plan_activo&updateMask.fieldPaths=plan_expira';
+    firestoreRequest('PATCH', "comerciantes/{$uid}?{$mask}", [
         'fields' => [
             'plan'        => ['stringValue'  => $plan],
             'plan_activo' => ['booleanValue' => true],
@@ -144,7 +146,8 @@ if ($accion === 'pago_agregar') {
     $expira  = date('c', strtotime("+{$meses} months", $base));
 
     // Activar/extender plan — también reactiva tiendas en cascada si era empresarial
-    firestoreRequest('PATCH', "comerciantes/{$uid}", ['fields' => [
+    $mask2 = 'updateMask.fieldPaths=plan&updateMask.fieldPaths=plan_activo&updateMask.fieldPaths=plan_expira';
+    firestoreRequest('PATCH', "comerciantes/{$uid}?{$mask2}", ['fields' => [
         'plan'        => ['stringValue'  => $plan],
         'plan_activo' => ['booleanValue' => true],
         'plan_expira' => ['stringValue'  => $expira],

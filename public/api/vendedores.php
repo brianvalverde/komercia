@@ -123,7 +123,8 @@ if ($method === 'POST' && $accion === 'crear') {
     $vid    = 'vnd_'.uniqid();
     $now    = date('c');
 
-    firestoreRequest('PATCH', vendedoresPath($uid,$tid)."/{$vid}", ['fields' => [
+    $maskC = 'updateMask.fieldPaths=nombre&updateMask.fieldPaths=email&updateMask.fieldPaths=telefono&updateMask.fieldPaths=codigo&updateMask.fieldPaths=activo&updateMask.fieldPaths=created_at';
+    firestoreRequest('PATCH', vendedoresPath($uid,$tid)."/{$vid}?{$maskC}", ['fields' => [
         'nombre'     => ['stringValue' => $nombre],
         'email'      => ['stringValue' => $email],
         'telefono'   => ['stringValue' => $telefono],
@@ -149,7 +150,8 @@ if ($method === 'POST' && $accion === 'actualizar') {
         exit;
     }
 
-    firestoreRequest('PATCH', vendedoresPath($uid,$tid)."/{$vid}", ['fields' => [
+    $mask = 'updateMask.fieldPaths=nombre&updateMask.fieldPaths=email&updateMask.fieldPaths=telefono&updateMask.fieldPaths=activo';
+    firestoreRequest('PATCH', vendedoresPath($uid,$tid)."/{$vid}?{$mask}", ['fields' => [
         'nombre'   => ['stringValue' => $nombre],
         'email'    => ['stringValue' => $email],
         'telefono' => ['stringValue' => $telefono],
@@ -174,7 +176,7 @@ if ($method === 'POST' && $accion === 'regenerar_codigo') {
     $vid    = trim($input['vendedor_id'] ?? '');
     $codigo = strtoupper(substr(md5(uniqid()), 0, 6));
     if (!$vid) { echo json_encode(['ok'=>false,'error'=>'vendedor_id requerido']); exit; }
-    firestoreRequest('PATCH', vendedoresPath($uid,$tid)."/{$vid}", ['fields' => [
+    firestoreRequest('PATCH', vendedoresPath($uid,$tid)."/{$vid}?updateMask.fieldPaths=codigo", ['fields' => [
         'codigo' => ['stringValue' => $codigo],
     ]]);
     echo json_encode(['ok'=>true,'codigo'=>$codigo]);

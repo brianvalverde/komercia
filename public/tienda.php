@@ -94,11 +94,14 @@ p{font-size:14px;color:#666;line-height:1.6;margin-bottom:28px}
     }
 }
 // ── FIN PLAN CHECK ─────────────────────────────────────────────
-// Cargar productos (solo activos)
+// Cargar productos (solo activos) — ruta según tienda principal o adicional
 $productos = [];
 $categorias = [];
 if ($uid) {
-    $res = firestoreRequest('GET', "comerciantes/{$uid}/productos");
+    $productosPath = ($tienda_id && $tienda_id !== 'main')
+        ? "comerciantes/{$uid}/tiendas/{$tienda_id}/productos"
+        : "comerciantes/{$uid}/productos";
+    $res = firestoreRequest('GET', $productosPath);
     if (!isset($res['error']) && isset($res['documents'])) {
         foreach ($res['documents'] as $doc) {
             $pf = $doc['fields'] ?? [];

@@ -9,10 +9,16 @@ if (!isset($_SESSION['uid'])) {
 require_once '/var/www/komercia/config/firebase.php';
 require_once '/var/www/komercia/config/wasabi.php';
 
-$uid    = $_SESSION['uid'];
-$slug   = $_SESSION['slug'];
-$method = $_SERVER['REQUEST_METHOD'];
-$action = $_GET['accion'] ?? '';
+$uid           = $_SESSION['uid'];
+$slug          = $_SESSION['slug'];
+$tienda_activa = $_SESSION['tienda_activa'] ?? 'main';
+$method        = $_SERVER['REQUEST_METHOD'];
+$action        = $_GET['accion'] ?? '';
+
+// Ruta de productos según tienda activa
+$productosBase = ($tienda_activa && $tienda_activa !== 'main')
+    ? "comerciantes/{$uid}/tiendas/{$tienda_activa}/productos"
+    : "comerciantes/{$uid}/productos";
 
 // URL directa de Wasabi para videos (CDN no soporta range requests)
 define('WASABI_DIRECT_URL', 'https://s3.us-west-1.wasabisys.com/' . WASABI_BUCKET);
@@ -59,7 +65,7 @@ function fsPromoArray(array $promos): array {
 
 // ─── LISTAR productos ─────────────────────────────────────────
 if ($method === 'GET' && $action === 'listar') {
-    $res  = firestoreRequest('GET', "comerciantes/{$uid}/productos");
+    $res  = firestoreRequest('GET', $productosBase);
     $docs = $res['documents'] ?? [];
     $productos = [];
     foreach ($docs as $doc) {
@@ -140,7 +146,7 @@ if ($method === 'POST' && in_array($action, ['crear', 'editar'])) {
     $videosActuales   = [];
 
     if ($isEdit && $prodId) {
-        $docActual = firestoreRequest('GET', "comerciantes/{$uid}/productos/{$prodId}");
+        $docActual = firestoreRequest('GET', "{$productosBase}/{$prodId}");
         $fa = $docActual['fields'] ?? [];
         // Videos existentes en Firestore (base para fusionar)
         foreach ($fa['videos']['arrayValue']['values'] ?? [] as $v) {
@@ -227,7 +233,7 @@ if ($method === 'POST' && in_array($action, ['crear', 'editar'])) {
     $fieldPaths = array_keys($fields);
     $maskQuery  = implode('&', array_map(fn($fp) => 'updateMask.fieldPaths=' . urlencode($fp), $fieldPaths));
 
-    firestoreRequest('PATCH', "comerciantes/{$uid}/productos/{$docId}?{$maskQuery}", ['fields' => $fields]);
+    firestoreRequest('PATCH', "{$productosBase}/{$docId}?{$maskQuery}", ['fields' => $fields]);
 
     echo json_encode([
         'ok'       => true,
@@ -246,13 +252,13 @@ if ($method === 'DELETE' && $action === 'eliminar') {
         exit;
     }
     // Leer imágenes y videos para borrar de Wasabi
-    $doc = firestoreRequest('GET', "comerciantes/{$uid}/productos/{$id}");
+    $doc = firestoreRequest('GET', "{$productosBase}/{$id}");
     $f   = $doc['fields'] ?? [];
     foreach ($f['imagenes']['arrayValue']['values'] ?? [] as $v) deleteWasabiUrl($v['stringValue'] ?? '');
     if ($f['imagen']['stringValue'] ?? '') deleteWasabiUrl($f['imagen']['stringValue']);
     foreach ($f['videos']['arrayValue']['values'] ?? [] as $v)   deleteWasabiUrl($v['stringValue'] ?? '');
 
-    firestoreRequest('DELETE', "comerciantes/{$uid}/productos/{$id}");
+    firestoreRequest('DELETE', "{$productosBase}/{$id}");
     echo json_encode(['ok' => true]);
     exit;
 }

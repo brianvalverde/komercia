@@ -24,14 +24,20 @@ if ($method === 'POST' && $action === 'crear') {
         exit;
     }
 
-    // Obtener uid del comerciante
+    // Obtener uid y tienda_id del comerciante
     $tiendaDoc = firestoreRequest('GET', "tiendas/{$slug}");
-    $uid = $tiendaDoc['fields']['uid']['stringValue'] ?? '';
+    $uid       = $tiendaDoc['fields']['uid']['stringValue']       ?? '';
+    $tienda_id = $tiendaDoc['fields']['tienda_id']['stringValue'] ?? 'main';
     if (!$uid) {
         ob_end_clean();
         echo json_encode(['ok' => false, 'error' => 'Tienda no encontrada']);
         exit;
     }
+
+    // Ruta según si es tienda principal o adicional
+    $pedidosBase = ($tienda_id && $tienda_id !== 'main')
+        ? "comerciantes/{$uid}/tiendas/{$tienda_id}/pedidos"
+        : "comerciantes/{$uid}/pedidos";
 
     $items = json_decode($itemsJson, true);
     if (!is_array($items)) $items = [];
@@ -60,7 +66,7 @@ if ($method === 'POST' && $action === 'crear') {
         ]
     ];
 
-    $res = firestoreRequest('PATCH', "comerciantes/{$uid}/pedidos/{$pedidoId}", $data);
+    $res = firestoreRequest('PATCH', "{$pedidosBase}/{$pedidoId}", $data);
     ob_end_clean();
 
     if (!$res || isset($res['error'])) {
@@ -78,11 +84,17 @@ if (empty($_SESSION['uid'])) {
     echo json_encode(['ok' => false, 'error' => 'No autenticado']);
     exit;
 }
-$uid = $_SESSION['uid'];
+$uid           = $_SESSION['uid'];
+$tienda_activa = $_SESSION['tienda_activa'] ?? 'main';
+
+// Ruta de pedidos según tienda activa
+$pedidosBase = ($tienda_activa && $tienda_activa !== 'main')
+    ? "comerciantes/{$uid}/tiendas/{$tienda_activa}/pedidos"
+    : "comerciantes/{$uid}/pedidos";
 
 // ─── LISTAR pedidos ─────────────────────────────────────────
 if ($method === 'GET' && $action === 'listar') {
-    $res  = firestoreRequest('GET', "comerciantes/{$uid}/pedidos");
+    $res  = firestoreRequest('GET', $pedidosBase);
     $docs = $res['documents'] ?? [];
     $pedidos = [];
     foreach ($docs as $doc) {
@@ -139,7 +151,7 @@ if ($method === 'POST' && $action === 'actualizar') {
     if (empty($fields)) { ob_end_clean(); echo json_encode(['ok' => false, 'error' => 'Sin cambios']); exit; }
 
     $maskQuery = implode('&', array_map(fn($f) => 'updateMask.fieldPaths=' . urlencode($f), array_keys($fields)));
-    firestoreRequest('PATCH', "comerciantes/{$uid}/pedidos/{$id}?{$maskQuery}", ['fields' => $fields]);
+    firestoreRequest('PATCH', "{$pedidosBase}/{$id}?{$maskQuery}", ['fields' => $fields]);
     ob_end_clean();
     echo json_encode(['ok' => true]);
     exit;

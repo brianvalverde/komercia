@@ -88,7 +88,8 @@ if ($method === 'POST' && $accion === 'crear') {
     $now = date('c');
 
     // Crear en subcolección del comerciante
-    firestoreRequest('PATCH', "comerciantes/{$uid}/tiendas/{$tid}", ['fields' => [
+    $maskT = 'updateMask.fieldPaths=nombre&updateMask.fieldPaths=slug&updateMask.fieldPaths=activo&updateMask.fieldPaths=created_at';
+    firestoreRequest('PATCH', "comerciantes/{$uid}/tiendas/{$tid}?{$maskT}", ['fields' => [
         'nombre'     => ['stringValue' => $nombre],
         'slug'       => ['stringValue' => $slug],
         'activo'     => ['booleanValue'=> true],
@@ -96,7 +97,8 @@ if ($method === 'POST' && $accion === 'crear') {
     ]]);
 
     // Registrar slug en colección raíz tiendas (para lookup público)
-    firestoreRequest('PATCH', "tiendas/{$slug}", ['fields' => [
+    $maskS = 'updateMask.fieldPaths=uid&updateMask.fieldPaths=tienda_id&updateMask.fieldPaths=slug';
+    firestoreRequest('PATCH', "tiendas/{$slug}?{$maskS}", ['fields' => [
         'uid'      => ['stringValue' => $uid],
         'tienda_id'=> ['stringValue' => $tid],
         'slug'     => ['stringValue' => $slug],

@@ -211,13 +211,10 @@ body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:
       <div class="plan-period">Facturado mensualmente</div>
       <hr class="plan-divider">
       <ul class="plan-features">
-        <li><span class="chk ok">✓</span> Productos ilimitados</li>
-        <li><span class="chk ok">✓</span> Tienda pública completa</li>
-        <li><span class="chk ok">✓</span> Pedidos por WhatsApp</li>
-        <li><span class="chk ok">✓</span> Carrito de compras</li>
-        <li><span class="chk ok">✓</span> Galería de imágenes y video</li>
-        <li><span class="chk ok">✓</span> Banners y redes sociales</li>
-        <li><span class="chk ok">✓</span> Soporte prioritario</li>
+        <li><span class="chk ok">✓</span> Todo lo del plan Pro</li>
+        <li><span class="chk ok">✓</span> Múltiples tiendas</li>
+        <li><span class="chk ok">✓</span> API personalizada</li>
+        <li><span class="chk ok">✓</span> Manager dedicado</li>
       </ul>
       <button class="plan-cta purple" id="cta-emp" onclick="contactarPlan('Empresarial - S/ 99/mes')">Activar Empresarial</button>
     </div>

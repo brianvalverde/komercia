@@ -71,7 +71,8 @@ if ($method === 'POST' && $action === 'crear') {
         'manual'     => ['booleanValue' => false],
     ]];
 
-    firestoreRequest('PATCH', "comerciantes/{$uid}/productos/{$prodId}/resenas/{$resenaId}", $data);
+    $maskR = 'updateMask.fieldPaths=nombre&updateMask.fieldPaths=pais&updateMask.fieldPaths=estrellas&updateMask.fieldPaths=comentario&updateMask.fieldPaths=fecha&updateMask.fieldPaths=aprobada&updateMask.fieldPaths=manual';
+    firestoreRequest('PATCH', "comerciantes/{$uid}/productos/{$prodId}/resenas/{$resenaId}?{$maskR}", $data);
     ob_end_clean();
     echo json_encode(['ok'=>true,'msg'=>'Reseña enviada, pendiente de aprobación']);
     exit;
@@ -136,7 +137,8 @@ if ($method === 'POST' && $action === 'crear_manual') {
         'manual'     => ['booleanValue' => true],
     ]];
 
-    firestoreRequest('PATCH', "comerciantes/{$uid}/productos/{$prodId}/resenas/{$resenaId}", $data);
+    $maskM = 'updateMask.fieldPaths=nombre&updateMask.fieldPaths=pais&updateMask.fieldPaths=estrellas&updateMask.fieldPaths=comentario&updateMask.fieldPaths=fecha&updateMask.fieldPaths=aprobada&updateMask.fieldPaths=manual';
+    firestoreRequest('PATCH', "comerciantes/{$uid}/productos/{$prodId}/resenas/{$resenaId}?{$maskM}", $data);
     ob_end_clean();
     echo json_encode(['ok'=>true,'id'=>$resenaId]);
     exit;

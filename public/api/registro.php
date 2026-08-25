@@ -83,7 +83,8 @@ $comercianteData = [
         'creado_en'    => ['stringValue'  => date('c')],
     ]
 ];
-firestoreRequest('PATCH', "comerciantes/{$uid}", $comercianteData);
+$maskCom = 'updateMask.fieldPaths=nombre&updateMask.fieldPaths=email&updateMask.fieldPaths=telefono&updateMask.fieldPaths=nombreTienda&updateMask.fieldPaths=slug&updateMask.fieldPaths=plan&updateMask.fieldPaths=trial_expira&updateMask.fieldPaths=activo&updateMask.fieldPaths=creado_en';
+firestoreRequest('PATCH', "comerciantes/{$uid}?{$maskCom}", $comercianteData);
 
 // Guardar tienda en Firestore (con nombreTienda y telefono)
 $tiendaData = [
@@ -97,7 +98,8 @@ $tiendaData = [
         'creado_en'    => ['stringValue'  => date('c')],
     ]
 ];
-firestoreRequest('PATCH', "tiendas/{$slug}", $tiendaData);
+$maskTda = 'updateMask.fieldPaths=uid&updateMask.fieldPaths=slug&updateMask.fieldPaths=nombre&updateMask.fieldPaths=nombreTienda&updateMask.fieldPaths=telefono&updateMask.fieldPaths=activo&updateMask.fieldPaths=creado_en';
+firestoreRequest('PATCH', "tiendas/{$slug}?{$maskTda}", $tiendaData);
 
 // Iniciar sesión
 $_SESSION['uid']    = $uid;
