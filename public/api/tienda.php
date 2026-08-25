@@ -4,7 +4,7 @@ ob_start();
 
 header('Content-Type: application/json; charset=utf-8');
 
-if (empty($_SESSION['uid']) || empty($_SESSION['slug'])) {
+if (empty($_SESSION['uid'])) {
     http_response_code(401);
     echo json_encode(['error' => 'No autorizado']);
     exit;

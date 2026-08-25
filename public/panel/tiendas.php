@@ -282,7 +282,7 @@ async function cargarTiendas() {
       <div class="sc-actions">
         ${!esActiva ? `<button class="btn btn-primary" onclick="cambiarTienda('${t.id}','${esc(t.nombre)}')">⚡ Activar</button>` : '<span style="font-size:13px;color:#ff6a00;font-weight:600">✓ Activa</span>'}
         <a href="https://komercia.online/tienda/${esc(t.slug)}" target="_blank" class="btn btn-gray">🔗 Ver</a>
-        ${!esPrincipal ? `<button class="btn btn-gray" onclick="abrirEditModal('${t.id}','${esc(t.nombre)}','${esc(t.slug)}')">✏️</button>` : ''}
+        <button class="btn btn-gray" onclick="abrirEditModal('${t.id}','${esc(t.nombre)}','${esc(t.slug)}')">✏️</button>
         ${!esPrincipal ? `<button class="btn btn-red" onclick="eliminarTienda('${t.id}','${esc(t.nombre)}')">🗑</button>` : ''}
       </div>
     </div>`;
@@ -448,9 +448,13 @@ async function guardarEdicion() {
   if (!nombre || !slug) { toast('❌ Completa nombre y slug', 'err'); return; }
   const btn = document.getElementById('edit-ok-btn');
   btn.disabled = true; btn.textContent = 'Guardando…';
+  const accion = (tid === 'main') ? 'actualizar_principal' : 'actualizar';
+  const body   = (tid === 'main')
+    ? {accion, nombre, slug}
+    : {accion, tienda_id:tid, nombre, slug};
   const r = await fetch('/api/tiendas', {
     method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({accion:'actualizar', tienda_id:tid, nombre, slug})
+    body: JSON.stringify(body)
   });
   const d = await r.json();
   btn.disabled = false; btn.textContent = 'Guardar cambios';

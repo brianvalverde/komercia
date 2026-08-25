@@ -204,4 +204,50 @@ if ($method === 'POST' && $accion === 'actualizar') {
     exit;
 }
 
+// ── POST actualizar_principal (nombre/slug tienda principal) ─
+if ($method === 'POST' && $accion === 'actualizar_principal') {
+    $nombre  = trim($input['nombre'] ?? '');
+    $slug    = trim(preg_replace('/[^a-z0-9-]/', '-', strtolower($input['slug'] ?? '')));
+    $slug    = trim(preg_replace('/-+/', '-', $slug), '-');
+
+    if (!$nombre || !$slug) { echo json_encode(['ok'=>false,'error'=>'Nombre y slug requeridos']); exit; }
+
+    $slugOld = $_SESSION['slug'] ?? '';
+
+    // Si cambió el slug, verificar que no esté en uso
+    if ($slug !== $slugOld && !empty($slugOld)) {
+        $check = firestoreRequest('GET', "tiendas/{$slug}");
+        if (!empty($check['fields'])) {
+            echo json_encode(['ok'=>false,'error'=>'Ese slug ya está en uso']); exit;
+        }
+    }
+
+    // Actualizar documento del comerciante
+    $maskCom = 'updateMask.fieldPaths=slug&updateMask.fieldPaths=nombreTienda&updateMask.fieldPaths=nombre_tienda';
+    firestoreRequest('PATCH', "comerciantes/{$uid}?{$maskCom}", ['fields' => [
+        'slug'         => ['stringValue' => $slug],
+        'nombreTienda' => ['stringValue' => $nombre],
+        'nombre_tienda'=> ['stringValue' => $nombre],
+    ]]);
+
+    // Actualizar/crear documento en colección tiendas raíz
+    if ($slugOld && $slugOld !== $slug) {
+        firestoreRequest('DELETE', "tiendas/{$slugOld}");
+    }
+    $maskTda = 'updateMask.fieldPaths=uid&updateMask.fieldPaths=slug&updateMask.fieldPaths=nombre&updateMask.fieldPaths=nombreTienda';
+    firestoreRequest('PATCH', "tiendas/{$slug}?{$maskTda}", ['fields' => [
+        'uid'          => ['stringValue' => $uid],
+        'slug'         => ['stringValue' => $slug],
+        'nombre'       => ['stringValue' => $nombre],
+        'nombreTienda' => ['stringValue' => $nombre],
+    ]]);
+
+    // Actualizar sesión
+    $_SESSION['slug']          = $slug;
+    $_SESSION['tienda_nombre'] = $nombre;
+
+    echo json_encode(['ok'=>true,'slug'=>$slug,'nombre'=>$nombre]);
+    exit;
+}
+
 echo json_encode(['ok'=>false,'error'=>'Acción no reconocida']);
