@@ -114,6 +114,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         echo json_encode(['ok'=>true,'expira'=>$expira]);
 
+    } elseif ($accion === 'sub_tiendas') {
+        // Lista sub-tiendas de un comerciante empresarial
+        $res  = firestoreRequest('GET', "comerciantes/{$uid}/tiendas?pageSize=50");
+        $docs = $res['documents'] ?? [];
+        $tiendas = [];
+        foreach ($docs as $doc) {
+            $parts = explode('/', $doc['name']);
+            $tid   = end($parts);
+            $f     = $doc['fields'] ?? [];
+            $tiendas[] = [
+                'id'     => $tid,
+                'nombre' => fsv($f,'nombre','—'),
+                'slug'   => fsv($f,'slug',''),
+                'activa' => $f['activa']['booleanValue'] ?? true,
+                'tipo'   => fsv($f,'tipo','adicional'),
+            ];
+        }
+        echo json_encode(['ok'=>true,'tiendas'=>$tiendas]);
+
     } else {
         echo json_encode(['ok'=>false,'error'=>'Acción desconocida']);
     }
@@ -242,6 +261,12 @@ textarea{resize:vertical;min-height:60px}
 .add-pago-form h4{font-size:14px;font-weight:700;margin-bottom:12px;color:#1a1a2e}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
+/* ── Sub-tiendas ── */
+.sub-card{background:#f8f9fb;border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-left:3px solid #7b1fa2}
+.sub-card .sc-info .sc-nombre{font-size:14px;font-weight:700;color:#1a1a2e}
+.sub-card .sc-info .sc-slug{font-size:12px;color:#aaa;margin-top:2px}
+.sub-tipo{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:#f3e5f5;color:#7b1fa2;white-space:nowrap}
+
 /* ── Toast ── */
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#1a1a2e;color:#fff;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:500;opacity:0;transition:all .3s;z-index:999;pointer-events:none;white-space:nowrap}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -321,6 +346,7 @@ textarea{resize:vertical;min-height:60px}
       <div class="det-tabs">
         <button class="det-tab active" onclick="showTab('tab-info',this)">📋 Información</button>
         <button class="det-tab" onclick="showTab('tab-pagos',this)">💳 Pagos</button>
+        <button class="det-tab" id="tab-sub-btn" style="display:none" onclick="showTab('tab-sub',this)">🏪 Sub-tiendas</button>
         <button class="det-tab" onclick="showTab('tab-add',this)">➕ Registrar pago</button>
       </div>
 
@@ -333,6 +359,13 @@ textarea{resize:vertical;min-height:60px}
       <div class="tab-panel" id="tab-pagos">
         <div class="pagos-list" id="pagos-list">
           <div class="pago-empty">Cargando pagos…</div>
+        </div>
+      </div>
+
+      <!-- Tab: sub-tiendas (solo empresarial) -->
+      <div class="tab-panel" id="tab-sub">
+        <div class="pagos-list" id="sub-list">
+          <div class="pago-empty">Cargando sub-tiendas…</div>
         </div>
       </div>
 
@@ -504,6 +537,15 @@ function abrirDet(uid){
     <div class="info-card"><div class="ik">Estado</div><div class="iv">${dias}</div></div>
     <div class="info-card"><div class="ik">UID Firebase</div><div class="iv" style="font-size:12px;word-break:break-all">${r.uid}</div></div>
   `;
+  // mostrar/ocultar tab sub-tiendas según plan
+  const subBtn = document.getElementById('tab-sub-btn');
+  if(r.plan==='empresarial'){
+    subBtn.style.display='';
+    cargarSubTiendas(uid);
+  } else {
+    subBtn.style.display='none';
+    document.getElementById('sub-list').innerHTML='';
+  }
   // reset tabs
   showTab('tab-info',document.querySelector('.det-tab'));
   // cargar pagos en background
@@ -511,6 +553,28 @@ function abrirDet(uid){
   document.getElementById('ov-det').classList.add('open');
   // pre-fill plan en form de agregar pago
   document.getElementById('ap-plan').value=(r.plan==='trial'||!r.plan)?'pro':r.plan;
+}
+
+async function cargarSubTiendas(uid){
+  const lista=document.getElementById('sub-list');
+  lista.innerHTML='<div class="pago-empty">Cargando…</div>';
+  const r=await api({accion:'sub_tiendas',uid});
+  if(!r.ok||!r.tiendas.length){lista.innerHTML='<div class="pago-empty">📭 Sin sub-tiendas registradas</div>';return;}
+  lista.innerHTML=r.tiendas.map(t=>{
+    const url=t.slug?`https://komercia.online/tienda/${t.slug}`:'';
+    const tipoBadge=t.tipo==='principal'?'<span class="sub-tipo" style="background:#e8f5e9;color:#2e7d32">PRINCIPAL</span>':'<span class="sub-tipo">ADICIONAL</span>';
+    const actBadge=t.activa?'<span class="sub-tipo" style="background:#e3f2fd;color:#1565c0">Activa</span>':'<span class="sub-tipo" style="background:#f5f5f5;color:#757575">Inactiva</span>';
+    const enlace=url?`<a href="${url}" target="_blank" class="btn btn-gray" style="font-size:12px">🔗 Abrir</a>`:'';
+    return `<div class="sub-card">
+      <div class="sc-info">
+        <div class="sc-nombre">${esc(t.nombre)}</div>
+        <div class="sc-slug">${t.slug||'sin slug'}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+        ${tipoBadge}${actBadge}${enlace}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 async function cargarPagos(uid){

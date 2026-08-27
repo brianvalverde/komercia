@@ -162,4 +162,25 @@ if ($accion === 'pago_agregar') {
     exit;
 }
 
+// ── sub_tiendas ───────────────────────────────────────────────
+if ($accion === 'sub_tiendas') {
+    if (!$uid) { echo json_encode(['ok'=>false,'error'=>'uid requerido']); exit; }
+    $res     = firestoreRequest('GET', "comerciantes/{$uid}/tiendas?pageSize=50");
+    $tiendas = [];
+    foreach ($res['documents'] ?? [] as $doc) {
+        $parts = explode('/', $doc['name']);
+        $tid   = end($parts);
+        $f     = $doc['fields'] ?? [];
+        $tiendas[] = [
+            'id'     => $tid,
+            'nombre' => fsv($f,'nombre','—'),
+            'slug'   => fsv($f,'slug',''),
+            'activa' => $f['activa']['booleanValue'] ?? true,
+            'tipo'   => fsv($f,'tipo','adicional'),
+        ];
+    }
+    echo json_encode(['ok'=>true,'tiendas'=>$tiendas]);
+    exit;
+}
+
 echo json_encode(['ok'=>false,'error'=>'Acción no reconocida']);
