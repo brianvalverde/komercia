@@ -81,12 +81,13 @@ $resenasArr = [];
 foreach (($resenasDoc['documents'] ?? []) as $doc) {
     $rf = $doc['fields'] ?? [];
     if (!($rf['aprobada']['booleanValue'] ?? false)) continue;
+    // Acepta campos nuevos (autor/texto/calificacion) y viejos (nombre/comentario/estrellas)
     $resenasArr[] = [
-        'nombre'     => fsv($rf,'nombre','Anónimo'),
+        'nombre'     => $rf['autor']['stringValue'] ?? fsv($rf,'nombre','Anónimo'),
         'pais'       => fsv($rf,'pais'),
-        'estrellas'  => (int)($rf['estrellas']['integerValue'] ?? 5),
-        'comentario' => fsv($rf,'comentario'),
-        'fecha'      => fsv($rf,'fecha'),
+        'estrellas'  => (int)($rf['calificacion']['integerValue'] ?? $rf['estrellas']['integerValue'] ?? 5),
+        'comentario' => $rf['texto']['stringValue'] ?? fsv($rf,'comentario'),
+        'fecha'      => $rf['creado_en']['stringValue'] ?? fsv($rf,'fecha'),
     ];
 }
 usort($resenasArr, fn($a,$b) => strcmp($b['fecha'],$a['fecha']));
@@ -196,7 +197,24 @@ img{max-width:100%}
 .prod-grid{display:grid;grid-template-columns:80px 1fr 420px;gap:24px;margin-bottom:40px}
 
 /* ── GALLERY THUMBS ── */
-.gallery-thumbs{display:flex;flex-direction:column;gap:8px;padding:4px 0}
+.gallery-thumbs{
+  display:flex;flex-direction:column;gap:8px;padding:4px 4px 4px 0;
+  max-height:480px;overflow-y:auto;overflow-x:hidden;
+  scrollbar-width:thin;
+  scrollbar-color:var(--c) #1a1a1a;
+}
+.gallery-thumbs::-webkit-scrollbar{width:4px}
+.gallery-thumbs::-webkit-scrollbar-track{background:#1a1a1a;border-radius:99px}
+.gallery-thumbs::-webkit-scrollbar-thumb{background:var(--c);border-radius:99px}
+/* Fade inferior para indicar que hay más thumbs */
+.thumbs-wrap{position:relative}
+.thumbs-wrap::after{
+  content:'';pointer-events:none;
+  position:absolute;bottom:0;left:0;right:0;height:40px;
+  background:linear-gradient(to top,#0d0d0d,transparent);
+  opacity:0;transition:opacity .3s;
+}
+.thumbs-wrap.has-more::after{opacity:1}
 .gthumb{width:72px;height:72px;border-radius:10px;object-fit:cover;border:2px solid #222;cursor:pointer;transition:.2s;background:#1a1a1a;flex-shrink:0}
 .gthumb:hover,.gthumb.active{border-color:var(--c);box-shadow:0 0 0 2px rgba(var(--r),var(--g2),var(--b2),.25)}
 .gthumb-vid{width:72px;height:72px;border-radius:10px;background:#1a1a1a;border:2px solid #222;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;color:#aaa;transition:.2s;flex-shrink:0}
@@ -256,8 +274,31 @@ img{max-width:100%}
 .btn-pedido:hover{border-color:var(--c);color:var(--c)}
 
 /* Descripción */
-.desc-box{background:#111;border:1px solid #1e1e1e;border-radius:14px;padding:16px 18px}
+.desc-box{
+  background:#111;border:1px solid #1e1e1e;border-radius:14px;
+  padding:16px 18px;
+  position:relative;overflow:hidden;
+}
 .desc-text{font-size:14px;color:#aaa;line-height:1.7}
+.desc-scroll{
+  max-height:180px;overflow-y:auto;
+  scrollbar-width:thin;
+  scrollbar-color:var(--c) #1a1a1a;
+  padding-right:6px;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+  overscroll-behavior:contain;
+}
+.desc-scroll::-webkit-scrollbar{width:4px}
+.desc-scroll::-webkit-scrollbar-track{background:#1a1a1a;border-radius:99px}
+.desc-scroll::-webkit-scrollbar-thumb{background:var(--c);border-radius:99px}
+/* Fade inferior que desaparece al llegar al final */
+.desc-fade{
+  position:absolute;bottom:0;left:0;right:0;height:48px;
+  background:linear-gradient(to top,#111 40%,transparent);
+  pointer-events:none;transition:opacity .3s;border-radius:0 0 14px 14px;
+}
+.desc-fade.hidden{opacity:0}
 
 /* Delivery badge */
 .delivery-badge{display:inline-flex;align-items:center;gap:6px;background:#111;border:1px solid #1e1e1e;border-radius:99px;padding:5px 12px;font-size:12px;color:#888;margin-bottom:16px}
@@ -391,20 +432,38 @@ textarea.fc{resize:vertical;min-height:80px}
     grid-template-rows:auto auto auto;
     gap:0;
   }
+  .thumbs-wrap{
+    overflow:hidden;
+    width:100%;
+  }
   .gallery-thumbs{
     order:1;
     grid-column:1;grid-row:1;
     flex-direction:row;
     overflow-x:auto;
-    padding:10px 0 10px;
-    gap:8px;
-    margin:0 -14px;
-    padding-left:14px;
-    padding-right:14px;
-    /* hide scrollbar but keep functionality */
-    scrollbar-width:none;
+    overflow-y:hidden;
+    padding:10px 14px 8px;
+    gap:10px;
+    width:100%;
+    box-sizing:border-box;
+    max-height:none; /* anular max-height vertical del desktop */
+    /* Scrollbar delgada del color de la tienda */
+    scrollbar-width:thin;
+    scrollbar-color:var(--c) #1a1a1a;
+    -webkit-overflow-scrolling:touch;
+    touch-action:pan-x;
   }
-  .gallery-thumbs::-webkit-scrollbar{display:none}
+  .gallery-thumbs::-webkit-scrollbar{height:3px}
+  .gallery-thumbs::-webkit-scrollbar-track{background:#1a1a1a;border-radius:99px}
+  .gallery-thumbs::-webkit-scrollbar-thumb{background:var(--c);border-radius:99px}
+  /* Fade derecha en mobile para indicar más imágenes */
+  .thumbs-wrap::after{
+    display:block;
+    top:0;left:auto;right:0;bottom:0;
+    width:48px;height:100%;
+    background:linear-gradient(to left,#0d0d0d 20%,transparent);
+    opacity:1;
+  }
   .gthumb,.gthumb-vid{
     width:68px;height:68px;
     flex-shrink:0;
@@ -429,6 +488,8 @@ textarea.fc{resize:vertical;min-height:80px}
   .topbar{padding:0 14px}
   .sf-inner{grid-template-columns:1fr;padding:28px 16px}
   .sf-bottom{flex-direction:column;text-align:center;padding:14px 16px}
+  /* Descripción en mobile: un poco más alta para aprovechar el espacio vertical */
+  .desc-scroll{max-height:220px}
 }
 </style>
 </head>
@@ -508,6 +569,7 @@ textarea.fc{resize:vertical;min-height:80px}
   <div class="prod-grid">
 
     <!-- Thumbnails -->
+    <div class="thumbs-wrap" id="thumbs-wrap">
     <div class="gallery-thumbs" id="thumbs-col">
       <?php
       $mi = 0;
@@ -520,11 +582,12 @@ textarea.fc{resize:vertical;min-height:80px}
         <div class="gthumb-vid" data-idx="<?= $mi++ ?>" onclick="selMedia(this,'vid','<?= htmlspecialchars($vid) ?>')">▶</div>
       <?php endforeach; ?>
     </div>
+    </div><!-- /thumbs-wrap -->
 
     <!-- Imagen principal -->
     <div class="gallery-main">
       <img id="main-img" src="<?= htmlspecialchars($pImagenPrinc) ?>" class="main-img" alt="<?= htmlspecialchars($pNombre) ?>">
-      <video id="main-video" class="main-video" controls></video>
+      <video id="main-video" class="main-video" controls controlsList="nodownload nofullscreen noremoteplayback" disablePictureInPicture oncontextmenu="return false"></video>
       <?php if(count($pImagenes)+count($pVideos)>1): ?>
       <div class="g-arrows">
         <button class="g-arrow" onclick="navMedia(-1)">‹</button>
@@ -614,11 +677,36 @@ textarea.fc{resize:vertical;min-height:80px}
       <?php if($pDescripcion): ?>
       <div class="sec-label" style="margin-top:8px">Descripción</div>
       <div class="desc-box">
-        <div class="desc-text"><?= nl2br(htmlspecialchars($pDescripcion)) ?></div>
+        <div class="desc-scroll" id="desc-scroll">
+          <div class="desc-text"><?= nl2br(htmlspecialchars($pDescripcion)) ?></div>
+        </div>
+        <div class="desc-fade" id="desc-fade"></div>
       </div>
       <?php endif; ?>
     </div>
   </div>
+
+  <!-- RELACIONADOS -->
+  <?php if(!empty($relacionados)): ?>
+  <div class="section">
+    <div class="section-head">🛍️ También te puede interesar</div>
+    <div class="rel-grid">
+      <?php foreach($relacionados as $r): ?>
+      <div class="rel-card" onclick="location.href='/tienda/<?= urlencode($slug) ?>/producto/<?= urlencode($r['id']) ?>'">
+        <?php if($r['imagen']): ?>
+        <img src="<?= htmlspecialchars($r['imagen']) ?>" class="rel-img" alt="<?= htmlspecialchars($r['nombre']) ?>" loading="lazy">
+        <?php else: ?>
+        <div class="rel-img" style="display:flex;align-items:center;justify-content:center;color:#333;font-size:32px">📦</div>
+        <?php endif; ?>
+        <div class="rel-info">
+          <div class="rel-nombre"><?= htmlspecialchars($r['nombre']) ?></div>
+          <div class="rel-precio">S/. <?= number_format($r['precio'],2) ?></div>
+        </div>
+      </div>
+      <?php endforeach; ?>
+    </div>
+  </div>
+  <?php endif; ?>
 
   <!-- RESEÑAS -->
   <div class="section">
@@ -670,28 +758,6 @@ textarea.fc{resize:vertical;min-height:80px}
       </div>
     </div>
   </div>
-
-  <!-- RELACIONADOS -->
-  <?php if(!empty($relacionados)): ?>
-  <div class="section">
-    <div class="section-head">🛍️ También te puede interesar</div>
-    <div class="rel-grid">
-      <?php foreach($relacionados as $r): ?>
-      <div class="rel-card" onclick="location.href='/tienda/<?= urlencode($slug) ?>/producto/<?= urlencode($r['id']) ?>'">
-        <?php if($r['imagen']): ?>
-        <img src="<?= htmlspecialchars($r['imagen']) ?>" class="rel-img" alt="<?= htmlspecialchars($r['nombre']) ?>" loading="lazy">
-        <?php else: ?>
-        <div class="rel-img" style="display:flex;align-items:center;justify-content:center;color:#333;font-size:32px">📦</div>
-        <?php endif; ?>
-        <div class="rel-info">
-          <div class="rel-nombre"><?= htmlspecialchars($r['nombre']) ?></div>
-          <div class="rel-precio">S/. <?= number_format($r['precio'],2) ?></div>
-        </div>
-      </div>
-      <?php endforeach; ?>
-    </div>
-  </div>
-  <?php endif; ?>
 
 </div><!-- /container -->
 
@@ -1018,6 +1084,36 @@ function showToast(msg, type='') {
 }
 
 updateCartUI();
+
+// ── FADE descripción ────────────────────────────────────────
+(function(){
+  const scroll = document.getElementById('desc-scroll');
+  const fade   = document.getElementById('desc-fade');
+  if (!scroll || !fade) return;
+  function checkFade() {
+    const atBottom = scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight < 8;
+    // Si el contenido no desborda, no mostrar fade
+    if (scroll.scrollHeight <= scroll.clientHeight) { fade.classList.add('hidden'); return; }
+    fade.classList.toggle('hidden', atBottom);
+  }
+  scroll.addEventListener('scroll', checkFade);
+  // Esperar a que el DOM esté listo para medir
+  requestAnimationFrame(checkFade);
+})();
+
+// ── FADE thumbnails ─────────────────────────────────────────
+(function(){
+  const thumbs = document.getElementById('thumbs-col');
+  const wrap   = document.getElementById('thumbs-wrap');
+  if (!thumbs || !wrap) return;
+  function checkThumbFade() {
+    if (thumbs.scrollHeight <= thumbs.clientHeight) { wrap.classList.remove('has-more'); return; }
+    const atBottom = thumbs.scrollHeight - thumbs.scrollTop - thumbs.clientHeight < 8;
+    wrap.classList.toggle('has-more', !atBottom);
+  }
+  thumbs.addEventListener('scroll', checkThumbFade);
+  requestAnimationFrame(checkThumbFade);
+})();
 
 // ── ZOOM ─────────────────────────────────────────────────────
 (function(){

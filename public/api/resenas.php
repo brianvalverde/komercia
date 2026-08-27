@@ -1,174 +1,182 @@
 <?php
+/**
+ * API Reseñas — acepta campos del panel (autor/texto/calificacion)
+ * y del formulario público (nombre/comentario/estrellas).
+ * Almacena con nombres canónicos: autor, texto, calificacion, pais, aprobada, creado_en.
+ */
 header('Content-Type: application/json');
 session_start();
-ob_start();
 
 require_once '/var/www/komercia/config/firebase.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['accion'] ?? '';
-$prodId = $_GET['producto_id'] ?? '';
 
-// ─── LISTAR reseñas de un producto (público) ─────────────────
-if ($method === 'GET' && $action === 'listar' && $prodId) {
-    $slug = $_GET['slug'] ?? '';
-    if (!$slug) { ob_end_clean(); echo json_encode(['ok'=>false,'error'=>'slug requerido']); exit; }
+// ── Autenticación ─────────────────────────────────────────────
+// Las acciones públicas (crear desde la tienda) no requieren sesión;
+// el resto sí (admin del panel).
+$publicActions = ['crear', 'listar_pub'];
+$adminActions  = ['listar', 'editar', 'aprobar', 'eliminar'];
 
-    $tiendaDoc = firestoreRequest('GET', "tiendas/{$slug}");
-    $uid = $tiendaDoc['fields']['uid']['stringValue'] ?? '';
-    if (!$uid) { ob_end_clean(); echo json_encode(['ok'=>false,'resenas',[]]); exit; }
+$uid           = $_SESSION['uid'] ?? null;
+$tienda_activa = $_SESSION['tienda_activa'] ?? 'main';
 
-    $res  = firestoreRequest('GET', "comerciantes/{$uid}/productos/{$prodId}/resenas");
-    $docs = $res['documents'] ?? [];
-    $resenas = [];
-    foreach ($docs as $doc) {
-        $f = $doc['fields'] ?? [];
-        $aprobada = $f['aprobada']['booleanValue'] ?? false;
-        if (!$aprobada) continue;
-        $resenas[] = [
-            'id'         => basename($doc['name']),
-            'nombre'     => $f['nombre']['stringValue'] ?? 'Anónimo',
-            'pais'       => $f['pais']['stringValue'] ?? '',
-            'estrellas'  => (int)($f['estrellas']['integerValue'] ?? 5),
-            'comentario' => $f['comentario']['stringValue'] ?? '',
-            'fecha'      => $f['fecha']['stringValue'] ?? '',
-        ];
-    }
-    // Ordenar por fecha desc
-    usort($resenas, fn($a,$b) => strcmp($b['fecha'], $a['fecha']));
-    ob_end_clean();
-    echo json_encode(['ok'=>true,'resenas'=>$resenas]);
-    exit;
-}
-
-// ─── CREAR reseña (público, cliente desde tienda) ────────────
-if ($method === 'POST' && $action === 'crear') {
-    $slug       = trim($_POST['slug'] ?? '');
-    $prodId     = trim($_POST['producto_id'] ?? '');
-    $nombre     = trim($_POST['nombre'] ?? '');
-    $pais       = trim($_POST['pais'] ?? '');
-    $estrellas  = max(1, min(5, intval($_POST['estrellas'] ?? 5)));
-    $comentario = trim($_POST['comentario'] ?? '');
-
-    if (!$slug || !$prodId || !$nombre || !$comentario) {
-        ob_end_clean();
-        echo json_encode(['ok'=>false,'error'=>'Datos incompletos']);
-        exit;
-    }
-
-    $tiendaDoc = firestoreRequest('GET', "tiendas/{$slug}");
-    $uid = $tiendaDoc['fields']['uid']['stringValue'] ?? '';
-    if (!$uid) { ob_end_clean(); echo json_encode(['ok'=>false,'error'=>'Tienda no encontrada']); exit; }
-
-    $resenaId = uniqid('res_');
-    $data = ['fields' => [
-        'nombre'     => ['stringValue'  => $nombre],
-        'pais'       => ['stringValue'  => $pais],
-        'estrellas'  => ['integerValue' => $estrellas],
-        'comentario' => ['stringValue'  => $comentario],
-        'fecha'      => ['stringValue'  => date('c')],
-        'aprobada'   => ['booleanValue' => false], // pendiente moderación
-        'manual'     => ['booleanValue' => false],
-    ]];
-
-    $maskR = 'updateMask.fieldPaths=nombre&updateMask.fieldPaths=pais&updateMask.fieldPaths=estrellas&updateMask.fieldPaths=comentario&updateMask.fieldPaths=fecha&updateMask.fieldPaths=aprobada&updateMask.fieldPaths=manual';
-    firestoreRequest('PATCH', "comerciantes/{$uid}/productos/{$prodId}/resenas/{$resenaId}?{$maskR}", $data);
-    ob_end_clean();
-    echo json_encode(['ok'=>true,'msg'=>'Reseña enviada, pendiente de aprobación']);
-    exit;
-}
-
-// ─── A partir de aquí requiere sesión ────────────────────────
-if (empty($_SESSION['uid'])) {
-    ob_end_clean();
+// Para acciones admin exigir sesión
+if (in_array($action, $adminActions) && !$uid) {
     http_response_code(401);
-    echo json_encode(['ok'=>false,'error'=>'No autenticado']);
+    echo json_encode(['ok' => false, 'error' => 'No autenticado']);
     exit;
 }
-$uid = $_SESSION['uid'];
 
-// ─── LISTAR reseñas de un producto (panel) ───────────────────
-if ($method === 'GET' && $action === 'listar_panel' && $prodId) {
-    $res  = firestoreRequest('GET', "comerciantes/{$uid}/productos/{$prodId}/resenas");
+// ── Base de productos ─────────────────────────────────────────
+// Para crear (público) el uid viene del slug → lo resolvemos con el GET param
+function getProductosBase(string $uid, string $tienda): string {
+    return ($tienda && $tienda !== 'main')
+        ? "comerciantes/{$uid}/tiendas/{$tienda}/productos"
+        : "comerciantes/{$uid}/productos";
+}
+
+function resenasPath(string $productosBase, string $prodId): string {
+    return "{$productosBase}/{$prodId}/resenas";
+}
+
+// ── Ayuda: coger primer valor no vacío entre varias claves POST ──
+function postFirst(array $keys, string $default = ''): string {
+    foreach ($keys as $k) {
+        $v = trim($_POST[$k] ?? '');
+        if ($v !== '') return $v;
+    }
+    return $default;
+}
+
+// ─── CREAR reseña (público o admin) ──────────────────────────
+if ($method === 'POST' && $action === 'crear') {
+    // Obtener uid: del panel (sesión) o del formulario público (slug → lookup)
+    $prodId = trim($_POST['producto_id'] ?? '');
+    $slug   = trim($_POST['slug'] ?? '');
+
+    // Resolver uid cuando viene del front público (usa el slug de tienda)
+    if (!$uid && $slug) {
+        $tiendaDoc = firestoreRequest('GET', "tiendas/{$slug}");
+        $uid       = $tiendaDoc['fields']['uid']['stringValue'] ?? null;
+        // Reseñas públicas van siempre a la ruta principal del comerciante
+        $tienda_activa = 'main';
+    }
+
+    if (!$uid || !$prodId) {
+        echo json_encode(['ok' => false, 'error' => 'producto_id requerido']); exit;
+    }
+
+    // Campos: acepta alias del formulario público
+    $autor   = postFirst(['autor','nombre'], 'Anónimo');
+    $texto   = postFirst(['texto','comentario']);
+    $cal     = max(1, min(5, (int)postFirst(['calificacion','estrellas'], '5')));
+    $pais    = trim($_POST['pais'] ?? '');
+    // Desde el panel el admin puede aprobar directamente; desde el público siempre pendiente
+    $desdeAdmin = $uid && isset($_SESSION['uid']);
+    $aprobada   = $desdeAdmin ? (($_POST['aprobada'] ?? 'false') === 'true') : false;
+
+    if (!$texto) {
+        echo json_encode(['ok' => false, 'error' => 'El texto/comentario es requerido']); exit;
+    }
+
+    $id     = uniqid('res_');
+    $fields = [
+        'autor'        => ['stringValue'  => $autor],
+        'texto'        => ['stringValue'  => $texto],
+        'calificacion' => ['integerValue' => $cal],
+        'pais'         => ['stringValue'  => $pais],
+        'aprobada'     => ['booleanValue' => $aprobada],
+        'creado_en'    => ['stringValue'  => date('c')],
+    ];
+    $base = getProductosBase($uid, $tienda_activa);
+    $mask = implode('&', array_map(fn($k) => 'updateMask.fieldPaths=' . urlencode($k), array_keys($fields)));
+    firestoreRequest('PATCH', resenasPath($base, $prodId) . "/{$id}?{$mask}", ['fields' => $fields]);
+    echo json_encode(['ok' => true, 'id' => $id]);
+    exit;
+}
+
+// ─── LISTAR (admin — todas, incluyendo pendientes) ─────────────
+if ($method === 'GET' && $action === 'listar') {
+    $prodId = trim($_GET['producto_id'] ?? '');
+    if (!$prodId) { echo json_encode(['ok' => false, 'error' => 'producto_id requerido']); exit; }
+
+    $base = getProductosBase($uid, $tienda_activa);
+    $res  = firestoreRequest('GET', resenasPath($base, $prodId));
     $docs = $res['documents'] ?? [];
     $resenas = [];
     foreach ($docs as $doc) {
-        $f = $doc['fields'] ?? [];
+        $f  = $doc['fields'] ?? [];
         $resenas[] = [
-            'id'         => basename($doc['name']),
-            'nombre'     => $f['nombre']['stringValue'] ?? '',
-            'pais'       => $f['pais']['stringValue'] ?? '',
-            'estrellas'  => (int)($f['estrellas']['integerValue'] ?? 5),
-            'comentario' => $f['comentario']['stringValue'] ?? '',
-            'fecha'      => $f['fecha']['stringValue'] ?? '',
-            'aprobada'   => $f['aprobada']['booleanValue'] ?? false,
-            'manual'     => $f['manual']['booleanValue'] ?? false,
+            'id'          => basename($doc['name']),
+            'autor'       => $f['autor']['stringValue'] ?? ($f['nombre']['stringValue'] ?? 'Anónimo'),
+            'texto'        => $f['texto']['stringValue'] ?? ($f['comentario']['stringValue'] ?? ''),
+            'calificacion' => (int)($f['calificacion']['integerValue'] ?? $f['estrellas']['integerValue'] ?? 5),
+            'pais'         => $f['pais']['stringValue'] ?? '',
+            'aprobada'     => $f['aprobada']['booleanValue'] ?? false,
+            'creado_en'    => $f['creado_en']['stringValue'] ?? ($f['fecha']['stringValue'] ?? ''),
         ];
     }
-    usort($resenas, fn($a,$b) => strcmp($b['fecha'], $a['fecha']));
-    ob_end_clean();
-    echo json_encode(['ok'=>true,'resenas'=>$resenas]);
+    usort($resenas, fn($a, $b) => strcmp($b['creado_en'], $a['creado_en']));
+    echo json_encode(['ok' => true, 'resenas' => $resenas]);
     exit;
 }
 
-// ─── CREAR reseña manual (comerciante desde panel) ───────────
-if ($method === 'POST' && $action === 'crear_manual') {
-    $prodId     = trim($_POST['producto_id'] ?? '');
-    $nombre     = trim($_POST['nombre'] ?? '');
-    $pais       = trim($_POST['pais'] ?? '');
-    $estrellas  = max(1, min(5, intval($_POST['estrellas'] ?? 5)));
-    $comentario = trim($_POST['comentario'] ?? '');
-    $fecha      = trim($_POST['fecha'] ?? date('Y-m-d'));
+// ─── EDITAR (admin) ────────────────────────────────────────────
+if ($method === 'POST' && $action === 'editar') {
+    $id     = trim($_POST['id'] ?? '');
+    $prodId = trim($_POST['producto_id'] ?? '');
+    $autor  = postFirst(['autor','nombre'], 'Anónimo');
+    $texto  = postFirst(['texto','comentario']);
+    $cal    = max(1, min(5, (int)postFirst(['calificacion','estrellas'], '5')));
+    $pais   = trim($_POST['pais'] ?? '');
 
-    if (!$prodId || !$nombre || !$comentario) {
-        ob_end_clean();
-        echo json_encode(['ok'=>false,'error'=>'Datos incompletos']);
-        exit;
+    if (!$id || !$prodId || !$texto) {
+        echo json_encode(['ok' => false, 'error' => 'id, producto_id y texto requeridos']); exit;
     }
 
-    $resenaId = uniqid('res_');
-    $data = ['fields' => [
-        'nombre'     => ['stringValue'  => $nombre],
-        'pais'       => ['stringValue'  => $pais],
-        'estrellas'  => ['integerValue' => $estrellas],
-        'comentario' => ['stringValue'  => $comentario],
-        'fecha'      => ['stringValue'  => $fecha . 'T00:00:00-05:00'],
-        'aprobada'   => ['booleanValue' => true], // aprobada automáticamente
-        'manual'     => ['booleanValue' => true],
-    ]];
-
-    $maskM = 'updateMask.fieldPaths=nombre&updateMask.fieldPaths=pais&updateMask.fieldPaths=estrellas&updateMask.fieldPaths=comentario&updateMask.fieldPaths=fecha&updateMask.fieldPaths=aprobada&updateMask.fieldPaths=manual';
-    firestoreRequest('PATCH', "comerciantes/{$uid}/productos/{$prodId}/resenas/{$resenaId}?{$maskM}", $data);
-    ob_end_clean();
-    echo json_encode(['ok'=>true,'id'=>$resenaId]);
+    $base   = getProductosBase($uid, $tienda_activa);
+    $fields = [
+        'autor'        => ['stringValue'  => $autor],
+        'texto'        => ['stringValue'  => $texto],
+        'calificacion' => ['integerValue' => $cal],
+        'pais'         => ['stringValue'  => $pais],
+        'editado_en'   => ['stringValue'  => date('c')],
+    ];
+    $mask = implode('&', array_map(fn($k) => 'updateMask.fieldPaths=' . urlencode($k), array_keys($fields)));
+    firestoreRequest('PATCH', resenasPath($base, $prodId) . "/{$id}?{$mask}", ['fields' => $fields]);
+    echo json_encode(['ok' => true]);
     exit;
 }
 
-// ─── APROBAR / RECHAZAR reseña ───────────────────────────────
-if ($method === 'POST' && $action === 'moderar') {
-    $prodId   = trim($_POST['producto_id'] ?? '');
-    $resenaId = trim($_POST['resena_id'] ?? '');
-    $aprobada = ($_POST['aprobada'] ?? 'false') === 'true';
+// ─── APROBAR / RECHAZAR (admin) ────────────────────────────────
+if ($method === 'POST' && $action === 'aprobar') {
+    $id      = trim($_POST['id'] ?? '');
+    $prodId  = trim($_POST['producto_id'] ?? '');
+    $aprobada= ($_POST['aprobada'] ?? 'true') === 'true';
 
-    if (!$prodId || !$resenaId) { ob_end_clean(); echo json_encode(['ok'=>false,'error'=>'IDs requeridos']); exit; }
+    if (!$id || !$prodId) {
+        echo json_encode(['ok' => false, 'error' => 'id y producto_id requeridos']); exit;
+    }
 
+    $base   = getProductosBase($uid, $tienda_activa);
     $fields = ['aprobada' => ['booleanValue' => $aprobada]];
-    $maskQuery = 'updateMask.fieldPaths=aprobada';
-    firestoreRequest('PATCH', "comerciantes/{$uid}/productos/{$prodId}/resenas/{$resenaId}?{$maskQuery}", ['fields'=>$fields]);
-    ob_end_clean();
-    echo json_encode(['ok'=>true]);
+    firestoreRequest('PATCH', resenasPath($base, $prodId) . "/{$id}?updateMask.fieldPaths=aprobada", ['fields' => $fields]);
+    echo json_encode(['ok' => true]);
     exit;
 }
 
-// ─── ELIMINAR reseña ─────────────────────────────────────────
+// ─── ELIMINAR (admin) ──────────────────────────────────────────
 if ($method === 'DELETE' && $action === 'eliminar') {
-    $resenaId = $_GET['resena_id'] ?? '';
-    if (!$prodId || !$resenaId) { ob_end_clean(); echo json_encode(['ok'=>false,'error'=>'IDs requeridos']); exit; }
-    firestoreRequest('DELETE', "comerciantes/{$uid}/productos/{$prodId}/resenas/{$resenaId}");
-    ob_end_clean();
-    echo json_encode(['ok'=>true]);
+    $id     = $_GET['id'] ?? '';
+    $prodId = $_GET['producto_id'] ?? '';
+    if (!$id || !$prodId) {
+        echo json_encode(['ok' => false, 'error' => 'id y producto_id requeridos']); exit;
+    }
+    $base = getProductosBase($uid, $tienda_activa);
+    firestoreRequest('DELETE', resenasPath($base, $prodId) . "/{$id}");
+    echo json_encode(['ok' => true]);
     exit;
 }
 
-ob_end_clean();
-echo json_encode(['ok'=>false,'error'=>'Acción no reconocida']);
+echo json_encode(['ok' => false, 'error' => 'Acción no reconocida']);
