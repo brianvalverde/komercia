@@ -999,8 +999,8 @@ function updateCartUI() {
       <img src="${esc(item.imagen)}" class="ci-img" alt="">
       <div class="ci-info">
         <div class="ci-name">${esc(item.nombre)}</div>
-        ${item.variante?`<div class="ci-var">${esc(item.variante)}${item.unidades?` · ${item.unidades} und.`:''}</div>`:''}
-        <div class="ci-price">S/. ${(item.precio*item.qty).toFixed(2)} × ${item.qty}</div>
+        ${item.variante?`<div class="ci-var">${esc(item.variante)}</div>`:''}
+        <div class="ci-price">S/. ${(item.precio*item.qty).toFixed(2)} × ${item.qty}${item.unidades?` · ${item.unidades} und.`:''}</div>
       </div>
       <button class="ci-del" onclick="removeItem(${i})">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
