@@ -105,6 +105,25 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;color:#333}
 .img-exist-item{position:relative;width:80px;height:80px}
 .img-exist-item img{width:80px;height:80px;object-fit:cover;border-radius:8px;border:2px solid #eee}
 .img-exist-del{position:absolute;top:-6px;right:-6px;background:#ff4444;color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+/* ── Variantes ── */
+.var-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#f8f8f8;border-radius:10px;margin-bottom:4px;border:1px solid #eee}
+.var-toggle-row label{font-size:14px;font-weight:600;color:#333}
+.var-toggle-row small{font-size:12px;color:#888;display:block;margin-top:2px}
+.toggle-sw{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle-sw input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:#ccc;border-radius:24px;cursor:pointer;transition:.2s}
+.toggle-slider:before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+.toggle-sw input:checked+.toggle-slider{background:#ff6a00}
+.toggle-sw input:checked+.toggle-slider:before{transform:translateX(20px)}
+.var-list{margin-top:12px}
+.var-row{display:grid;grid-template-columns:1fr 100px 80px 32px;gap:8px;margin-bottom:8px;align-items:center}
+.var-row input{padding:8px 10px;border:1px solid #ddd;border-radius:7px;font-size:13px;outline:none;font-family:inherit}
+.var-row input:focus{border-color:#ff6a00}
+.var-del-btn{width:32px;height:36px;background:#fff5f5;border:1px solid #fecaca;border-radius:7px;color:#e03;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+.var-del-btn:hover{background:#e03;color:#fff}
+.btn-add-var{background:none;border:1.5px dashed #ff6a00;color:#ff6a00;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s;font-family:inherit;width:100%;margin-top:4px}
+.btn-add-var:hover{background:#fff8f4}
+.var-hint{font-size:11px;color:#aaa;margin-top:6px;text-align:center}
 /* ── Reseñas ── */
 .resenas-section{display:none;margin-top:24px;border-top:1px solid #eee;padding-top:20px}
 .resenas-section.visible{display:block}
@@ -310,6 +329,25 @@ body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;color:#333}
           <div class="drop-text">Arrastra tu video aquí o <strong>haz clic para seleccionar</strong></div>
         </div>
         <div id="preview-videos" style="margin-top:10px"></div>
+      </div>
+
+      <!-- Variantes -->
+      <div class="form-group" style="margin-top:4px">
+        <div class="var-toggle-row">
+          <div>
+            <label for="var-toggle">🎛️ Habilitar variantes</label>
+            <small>Reemplaza el selector de cantidad por opciones con precio</small>
+          </div>
+          <label class="toggle-sw">
+            <input type="checkbox" id="var-toggle" onchange="toggleVariantes(this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div id="var-section" style="display:none">
+          <div class="var-list" id="var-list"></div>
+          <button type="button" class="btn-add-var" onclick="addVarianteRow()">＋ Agregar variante</button>
+          <div class="var-hint">Cada variante tiene un nombre y su propio precio</div>
+        </div>
       </div>
 
       <!-- Barra de progreso upload -->
@@ -533,6 +571,11 @@ function abrirModal(producto = null) {
   videosEliminar    = [];
   videosExistentes  = [];
 
+  // Reset variantes
+  document.getElementById('var-toggle').checked = false;
+  document.getElementById('var-section').style.display = 'none';
+  document.getElementById('var-list').innerHTML = '';
+
   // Ocultar sección reseñas por defecto
   document.getElementById('resenas-section').classList.remove('visible');
   document.getElementById('resenas-lista').innerHTML = '';
@@ -553,6 +596,12 @@ function abrirModal(producto = null) {
     if (imgs.length) { imagenesExistentes = [...imgs]; renderMediaExist('img'); }
     // Videos existentes
     if (producto.videos && producto.videos.length) { videosExistentes = [...producto.videos]; renderMediaExist('vid'); }
+    // Variantes existentes
+    if (producto.variantes_activas) {
+      document.getElementById('var-toggle').checked = true;
+      document.getElementById('var-section').style.display = 'block';
+      (producto.promociones || []).forEach(v => addVarianteRow(v.nombre, v.precio, v.unidades ?? ''));
+    }
     // Cargar reseñas del producto
     cargarResenas(producto.id);
   } else {
@@ -619,6 +668,10 @@ document.getElementById('form-producto').addEventListener('submit', async functi
     formData.append('imagenes_eliminar',    JSON.stringify(imagenesEliminar));
     formData.append('videos_eliminar',      JSON.stringify(videosEliminar));
   }
+  // Variantes
+  formData.append('variantes_activas', document.getElementById('var-toggle').checked ? 'true' : 'false');
+  formData.append('promociones', JSON.stringify(getVariantesData()));
+
   // PHP espera imagenes[] y videos[] para recibirlos como $_FILES array
   imgsFinal.forEach(f => formData.append('imagenes[]', f));
   vidsFinal.forEach(f => formData.append('videos[]', f));
@@ -714,6 +767,42 @@ function modalConfirm({ icon='⚠️', tipo='danger', titulo='¿Estás seguro?',
 document.getElementById('confirm-overlay').addEventListener('click', function(e) {
   if (e.target === this) confirmResolve(false);
 });
+// ══════════════════════════════════════
+// ── VARIANTES ──
+// ══════════════════════════════════════
+function toggleVariantes(on) {
+  document.getElementById('var-section').style.display = on ? 'block' : 'none';
+  if (on && document.querySelectorAll('#var-list .var-row').length === 0) addVarianteRow();
+}
+
+function addVarianteRow(nombre = '', precio = '', unidades = '') {
+  const list = document.getElementById('var-list');
+  const row  = document.createElement('div');
+  row.className = 'var-row';
+  row.innerHTML = `
+    <input type="text"   class="var-nombre"    placeholder="Nombre (ej: Talla S, Color azul…)" value="${escHtmlPan(nombre)}">
+    <input type="number" class="var-precio"    placeholder="Precio" step="0.01" min="0" value="${precio}">
+    <input type="number" class="var-unidades"  placeholder="Unidades" min="0" step="1" value="${unidades}">
+    <button type="button" class="var-del-btn" onclick="this.parentNode.remove()" title="Eliminar">×</button>`;
+  list.appendChild(row);
+}
+
+function escHtmlPan(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function getVariantesData() {
+  const rows = document.querySelectorAll('#var-list .var-row');
+  const vars = [];
+  rows.forEach(r => {
+    const nombre    = r.querySelector('.var-nombre').value.trim();
+    const precio    = parseFloat(r.querySelector('.var-precio').value) || 0;
+    const unidades  = parseInt(r.querySelector('.var-unidades').value) || 0;
+    if (nombre) vars.push({ nombre, precio, unidades, detalle: '' });
+  });
+  return vars;
+}
+
 // ══════════════════════════════════════
 // ── RESEÑAS ──
 // ══════════════════════════════════════

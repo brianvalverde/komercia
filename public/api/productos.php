@@ -55,9 +55,10 @@ function fsPromoArray(array $promos): array {
     $vals = [];
     foreach ($promos as $p) {
         $vals[] = ['mapValue' => ['fields' => [
-            'nombre' => ['stringValue' => $p['nombre'] ?? ''],
-            'precio' => ['doubleValue'  => (float)($p['precio'] ?? 0)],
-            'detalle'=> ['stringValue' => $p['detalle'] ?? ''],
+            'nombre'   => ['stringValue'  => $p['nombre'] ?? ''],
+            'precio'   => ['doubleValue'  => (float)($p['precio'] ?? 0)],
+            'unidades' => ['integerValue' => (int)($p['unidades'] ?? 0)],
+            'detalle'  => ['stringValue'  => $p['detalle'] ?? ''],
         ]]];
     }
     return ['arrayValue' => ['values' => $vals]];
@@ -92,24 +93,26 @@ if ($method === 'GET' && $action === 'listar') {
         foreach ($f['promociones']['arrayValue']['values'] ?? [] as $v) {
             $pf = $v['mapValue']['fields'] ?? [];
             $promociones[] = [
-                'nombre'  => $pf['nombre']['stringValue'] ?? '',
-                'precio'  => (float)($pf['precio']['doubleValue'] ?? $pf['precio']['integerValue'] ?? 0),
-                'detalle' => $pf['detalle']['stringValue'] ?? '',
+                'nombre'   => $pf['nombre']['stringValue'] ?? '',
+                'precio'   => (float)($pf['precio']['doubleValue'] ?? $pf['precio']['integerValue'] ?? 0),
+                'unidades' => (int)($pf['unidades']['integerValue'] ?? 0),
+                'detalle'  => $pf['detalle']['stringValue'] ?? '',
             ];
         }
 
         $productos[] = [
-            'id'          => $id,
-            'nombre'      => $f['nombre']['stringValue'] ?? '',
-            'descripcion' => $f['descripcion']['stringValue'] ?? '',
-            'precio'      => (float)($f['precio']['doubleValue'] ?? $f['precio']['integerValue'] ?? 0),
-            'stock'       => (int)($f['stock']['integerValue'] ?? 0),
-            'imagen'      => $imagenes[0] ?? '',      // compatibilidad
-            'imagenes'    => $imagenes,
-            'videos'      => $videos,
-            'categoria'   => $f['categoria']['stringValue'] ?? '',
-            'activo'      => $f['activo']['booleanValue'] ?? true,
-            'promociones' => $promociones,
+            'id'               => $id,
+            'nombre'           => $f['nombre']['stringValue'] ?? '',
+            'descripcion'      => $f['descripcion']['stringValue'] ?? '',
+            'precio'           => (float)($f['precio']['doubleValue'] ?? $f['precio']['integerValue'] ?? 0),
+            'stock'            => (int)($f['stock']['integerValue'] ?? 0),
+            'imagen'           => $imagenes[0] ?? '',
+            'imagenes'         => $imagenes,
+            'videos'           => $videos,
+            'categoria'        => $f['categoria']['stringValue'] ?? '',
+            'activo'           => $f['activo']['booleanValue'] ?? true,
+            'promociones'      => $promociones,
+            'variantes_activas'=> $f['variantes_activas']['booleanValue'] ?? false,
         ];
     }
     echo json_encode(['ok' => true, 'productos' => $productos]);
@@ -125,7 +128,8 @@ if ($method === 'POST' && in_array($action, ['crear', 'editar'])) {
     $precio      = (float)($_POST['precio'] ?? 0);
     $stock       = (int)($_POST['stock'] ?? 0);
     $categoria   = trim($_POST['categoria'] ?? '');
-    $promoJson   = $_POST['promociones'] ?? '[]';
+    $promoJson        = $_POST['promociones'] ?? '[]';
+    $variantesActivas = ($_POST['variantes_activas'] ?? 'false') === 'true';
     $imgEliminar = json_decode($_POST['imagenes_eliminar'] ?? '[]', true) ?: [];
     $vidEliminar = json_decode($_POST['videos_eliminar'] ?? '[]', true) ?: [];
     $imgExiste   = json_decode($_POST['imagenes_existentes'] ?? '[]', true) ?: [];
@@ -222,8 +226,9 @@ if ($method === 'POST' && in_array($action, ['crear', 'editar'])) {
         'imagenes'    => fsUrlArray($imagenesActuales),
         'videos'      => fsUrlArray($videosActuales),
         'categoria'   => ['stringValue'  => $categoria],
-        'activo'      => ['booleanValue' => true],
-        'promociones' => fsPromoArray($promociones),
+        'activo'            => ['booleanValue' => true],
+        'promociones'       => fsPromoArray($promociones),
+        'variantes_activas' => ['booleanValue' => $variantesActivas],
     ];
     if (!$isEdit) {
         $fields['creado_en'] = ['stringValue' => date('c')];

@@ -68,11 +68,14 @@ foreach (($pf['variantes']['arrayValue']['values'] ?? []) as $v) {
     $mf = $v['mapValue']['fields'] ?? [];
     if (!empty($mf['nombre']['stringValue'])) $pVariantes[] = fsv($mf, 'nombre');
 }
+$pVariantesActivas = $pf['variantes_activas']['booleanValue'] ?? false;
 $pPromociones = [];
 foreach (($pf['promociones']['arrayValue']['values'] ?? []) as $v) {
     $mf = $v['mapValue']['fields'] ?? [];
-    if (!empty($mf['cantidad']['integerValue']) && !empty($mf['precio']['doubleValue']))
-        $pPromociones[] = ['cantidad'=>(int)$mf['cantidad']['integerValue'],'precio'=>(float)$mf['precio']['doubleValue']];
+    $nom = $mf['nombre']['stringValue'] ?? '';
+    $pre = (float)($mf['precio']['doubleValue'] ?? $mf['precio']['integerValue'] ?? 0);
+    $uni = (int)($mf['unidades']['integerValue'] ?? 0);
+    if ($nom) $pPromociones[] = ['nombre'=>$nom,'precio'=>$pre,'unidades'=>$uni];
 }
 
 // ── Reseñas ─────────────────────────────────────────────────
@@ -256,6 +259,7 @@ img{max-width:100%}
 .var-btn{padding:8px 16px;border:1.5px solid #2a2a2a;border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;background:#161616;color:#ccc;transition:.2s}
 .var-btn:hover{border-color:var(--c);color:var(--c)}
 .var-btn.active{border-color:var(--c);background:rgba(var(--r),var(--g2),var(--b2),.12);color:var(--c)}
+.var-btn small{display:block;font-size:11px;font-weight:500;opacity:.75;margin-top:2px}
 
 /* Cantidad */
 .qty-wrap{display:flex;align-items:center;gap:14px;margin-bottom:20px}
@@ -624,20 +628,19 @@ textarea.fc{resize:vertical;min-height:80px}
       <div class="delivery-badge">🚚 Envío: S/. <?= number_format((float)$deliveryPrecio,2) ?></div>
       <?php endif; ?>
 
-      <?php if(!empty($pPromociones)): ?>
-      <div class="promo-wrap">
-        <div class="sec-label">🏷️ Promociones</div>
-        <div class="promo-pills">
+      <?php if($pVariantesActivas && !empty($pPromociones)): ?>
+      <div class="var-wrap">
+        <div class="sec-label">Variantes</div>
+        <div class="var-pills" id="var-pills">
           <?php foreach($pPromociones as $pr): ?>
-          <div class="promo-pill" onclick="selPromo(this,<?= $pr['precio'] ?>,<?= $pr['cantidad'] ?>)">
-            <?= $pr['cantidad'] ?>+ → S/. <?= number_format($pr['precio'],2) ?>
-          </div>
+          <button class="var-btn" data-precio="<?= $pr['precio'] ?>" onclick="selVariante(this,<?= $pr['precio'] ?>,<?= $pr['unidades'] ?>)">
+            <?= htmlspecialchars($pr['nombre']) ?><br>
+            <small>S/. <?= number_format($pr['precio'],2) ?><?= $pr['unidades'] > 0 ? ' · '.$pr['unidades'].' und.' : '' ?></small>
+          </button>
           <?php endforeach; ?>
         </div>
       </div>
-      <?php endif; ?>
-
-      <?php if(!empty($pVariantes)): ?>
+      <?php elseif(!empty($pVariantes)): ?>
       <div class="var-wrap">
         <div class="sec-label">Variante</div>
         <div class="var-pills">
@@ -649,6 +652,7 @@ textarea.fc{resize:vertical;min-height:80px}
       <?php endif; ?>
 
       <?php if($pStock>0): ?>
+      <?php if(!$pVariantesActivas): ?>
       <div class="qty-wrap">
         <div class="sec-label" style="margin-bottom:0">Cantidad</div>
         <div class="qty-ctrl">
@@ -657,6 +661,7 @@ textarea.fc{resize:vertical;min-height:80px}
           <button class="qty-btn" onclick="chQty(1)">+</button>
         </div>
       </div>
+      <?php endif; ?>
       <div class="cta-row">
         <button class="btn-add" onclick="addToCart()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
@@ -939,9 +944,31 @@ function selPromo(pill, precio, qty) {
   }
 }
 
+// ── VARIANTES (con precio) ────────────────────────────────────
+let selVarianteNombre  = null;
+let selVariantePrecio  = null;
+let selVarianteUnidades = 0;
+function selVariante(btn, precio, unidades) {
+  const nombre = btn.childNodes[0].textContent.trim();
+  if (selVariantePrecio === precio && selVarianteNombre === nombre) {
+    // deselect
+    btn.classList.remove('active');
+    selVarianteNombre = null; selVariantePrecio = null; selVarianteUnidades = 0;
+    document.getElementById('precio-display').textContent = 'S/. '+PROD.precio.toFixed(2);
+  } else {
+    document.querySelectorAll('#var-pills .var-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    selVarianteNombre   = nombre;
+    selVariantePrecio   = precio;
+    selVarianteUnidades = unidades || 0;
+    document.getElementById('precio-display').textContent = 'S/. '+precio.toFixed(2);
+  }
+}
+
 // ── CANTIDAD ─────────────────────────────────────────────────
 function chQty(d) {
   const inp=document.getElementById('qty');
+  if (!inp) return;
   inp.value=Math.max(1,Math.min(PROD.stock,parseInt(inp.value)+d));
 }
 
@@ -949,12 +976,14 @@ function chQty(d) {
 function saveCart(){ localStorage.setItem('cart_'+SLUG,JSON.stringify(cart)); }
 
 function addToCart() {
-  const qty   = parseInt(document.getElementById('qty').value)||1;
-  const precio= selPromoPrice??PROD.precio;
-  const key   = PROD.id+'|'+(selVar||'');
+  const qtyEl = document.getElementById('qty');
+  const qty   = qtyEl ? (parseInt(qtyEl.value)||1) : 1;
+  const precio= selVariantePrecio ?? selPromoPrice ?? PROD.precio;
+  const varName = selVarianteNombre || selVar || null;
+  const key   = PROD.id+'|'+(varName||'');
   const exist = cart.find(x=>x.key===key);
   if (exist) exist.qty+=qty;
-  else cart.push({key,id:PROD.id,nombre:PROD.nombre,imagen:PROD.imagen,precio,variante:selVar,qty});
+  else cart.push({key,id:PROD.id,nombre:PROD.nombre,imagen:PROD.imagen,precio,variante:varName,unidades:selVarianteUnidades,qty});
   saveCart(); updateCartUI(); openDrawer(); showToast('✅ Agregado al carrito','ok');
 }
 
@@ -970,7 +999,7 @@ function updateCartUI() {
       <img src="${esc(item.imagen)}" class="ci-img" alt="">
       <div class="ci-info">
         <div class="ci-name">${esc(item.nombre)}</div>
-        ${item.variante?`<div class="ci-var">${esc(item.variante)}</div>`:''}
+        ${item.variante?`<div class="ci-var">${esc(item.variante)}${item.unidades?` · ${item.unidades} und.`:''}</div>`:''}
         <div class="ci-price">S/. ${(item.precio*item.qty).toFixed(2)} × ${item.qty}</div>
       </div>
       <button class="ci-del" onclick="removeItem(${i})">
@@ -990,9 +1019,12 @@ function irWsp(){
 }
 
 function comprarWsp() {
-  const qty   = parseInt(document.getElementById('qty').value)||1;
-  const precio= selPromoPrice??PROD.precio;
-  let msg=`*${TIENDA_NOMBRE}*\n\nHola, quiero comprar:\n• ${PROD.nombre}${selVar?' ('+selVar+')':''} x${qty} — S/. ${(precio*qty).toFixed(2)}`;
+  const qtyEl = document.getElementById('qty');
+  const qty   = qtyEl ? (parseInt(qtyEl.value)||1) : 1;
+  const precio= selVariantePrecio ?? selPromoPrice ?? PROD.precio;
+  const varName = selVarianteNombre || selVar || null;
+  const varLabel = varName ? ` (${varName}${selVarianteUnidades?' · '+selVarianteUnidades+' und.':''})` : '';
+  let msg=`*${TIENDA_NOMBRE}*\n\nHola, quiero comprar:\n• ${PROD.nombre}${varLabel} x${qty} — S/. ${(precio*qty).toFixed(2)}`;
   if (DELIVERY_TIPO==='costo_fijo') msg+=`\nEnvío: S/. ${DELIVERY_PRECIO.toFixed(2)}`;
   msg+=`\n\n*Total: S/. ${(precio*qty+(DELIVERY_TIPO==='costo_fijo'?DELIVERY_PRECIO:0)).toFixed(2)}*`;
   const num=(WHATSAPP||'').replace(/\D/g,'');
@@ -1003,7 +1035,7 @@ function checkout() {
   if (!cart.length) return showToast('Tu carrito está vacío');
   if (METODO_VENTAS==='whatsapp') {
     let msg=`*Pedido en ${TIENDA_NOMBRE}*\n\n`;
-    cart.forEach(c=>{ msg+=`• ${c.nombre}${c.variante?' ('+c.variante+')':''} x${c.qty} — S/. ${(c.precio*c.qty).toFixed(2)}\n`; });
+    cart.forEach(c=>{ const vl=c.variante?` (${c.variante}${c.unidades?' · '+c.unidades+' und.':''})`:''; msg+=`• ${c.nombre}${vl} x${c.qty} — S/. ${(c.precio*c.qty).toFixed(2)}\n`; });
     const total=cart.reduce((a,c)=>a+c.precio*c.qty,0);
     if (DELIVERY_TIPO==='costo_fijo') msg+=`\nEnvío: S/. ${DELIVERY_PRECIO.toFixed(2)}`;
     msg+=`\n*Total: S/. ${(total+(DELIVERY_TIPO==='costo_fijo'?DELIVERY_PRECIO:0)).toFixed(2)}*`;
